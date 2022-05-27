@@ -1,0 +1,102 @@
+<html>
+
+<head>
+    <script src="p5.min.js"></script>
+
+    <style>
+        #animalContainer {
+            transform: translate3d(0, 0, 0);
+            pointer-events: none;
+        }
+
+        #game,
+        #animalContainer,
+        canvas {
+            display: block;
+            position: fixed;
+            top: 0px;
+            width: 100vw;
+            margin: 0px;
+            height: 100vh;
+        }
+
+        #animalContainer {
+
+            z-index: 99;
+        }
+
+        .cell {
+            pointer-events: all;
+            position: absolute;
+            display: inline;
+            border: 1px solid #eeeeee
+        }
+
+        animal {
+            pointer-events: all;
+            border: 1px solid rgba(0, 0, 0, 0.5);
+            position: absolute;
+            display: block;
+            border-radius: 100%;
+            z-index: 100;
+            transform: translate(-50%, -50%)
+        }
+
+        #pause,
+        #hidePanel {
+            position: fixed;
+            bottom: 0px;
+            right: 0px;
+            z-index: 9999;
+        }
+
+        #hidePanel {
+            right: 50px
+        }
+
+
+        canvas {
+            z-index: 99999;
+            pointer-events: none;
+            touch-action: none;
+        }
+
+        control {
+
+            z-index: 99999999999;
+            position: fixed;
+            top: 0px;
+            left: 0px;
+            background: #00000044;
+            backdrop-filter: blur(4px);
+            color: white;
+            /* buffered-rendering: revert; */
+            width: 50vw;
+            height: 50vh;
+            padding: 10px;
+        }
+    </style>
+</head>
+
+<body onload="init()">
+
+
+    <control style="display:none">
+        <p>every: <input id="everyHowManyFrames" value="20" /></p>
+        <div id="contentOfControl"></div>
+    </control>
+    <button id="hidePanel" onclick="togglePanel()">togglePanel</button>
+    <button id="pause" onclick="pausebutton()">pause</button>
+    <div id="game">
+    </div>
+
+    <script src="cell.js"></script>
+    <script src="animal.js"></script>
+
+    <script src="game.js"></script>
+
+
+
+</body>
+
+</html>
