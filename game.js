@@ -1,25 +1,32 @@
 var FRAMENUM = 0;
 var grid = [];
 var ctx;
-var cellWidth = 45;
-var animals = [];
-////control panel
-var USE_ANIMAL_LIMIT = true;
-var numberOfAnimals = 600;
-var animalsLimit = 1000;
+var pause = false;
+var canvas;
 var width = window.innerWidth * 0.95;
 var height = window.innerHeight * 0.95;
-var pause = false;
-var PERCENTAGE_OF_ROCK_FLOOR = 0.7;
-var MAX_FOOD_OF_CELLS = 300;
-var CELLCLOCK_TO_REPRODUCE = 100;
-var canvas;
+var animals = [];
+/////////////////////////
+////control panel ///////
+///////////////////////
+var cellWidth = 45;
+var USE_ANIMAL_LIMIT = true;
+var numberOfAnimals = 100;
+var animalsLimit = 600;
+var PERCENTAGE_OF_ROCK_FLOOR = 0.9;
+var MAX_FOOD_OF_CELLS = 1000;
+var CELLCLOCK_TO_REPRODUCE = 10;
+var YEAR = 1;
+var MIN_DISTANCE_FACTOR_TO_INTERACT = 2;
+var RESOLUTION = 1;
 //////
 const pausebutton = () => {
   console.log("pause");
   pause = !pause;
 };
-
+const showLifeLogOfAnimal0 = () => {
+  console.table(JSON.parse(localStorage.animal0));
+};
 const togglePanel = () => {
   let panel = document.querySelector("control");
   if (panel.style.display == "none") panel.style.display = "block";
@@ -155,6 +162,7 @@ const createAnimals = (grid) => {
 };
 
 const init = () => {
+  localStorage.clear();
   grid = createGrid();
   createAnimals(grid);
 
@@ -163,8 +171,8 @@ const init = () => {
 
   canvas = document.createElement("canvas");
   document.body.appendChild(canvas);
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  canvas.width = width * RESOLUTION;
+  canvas.height = height * RESOLUTION;
 
   ctx = canvas.getContext("2d");
 
