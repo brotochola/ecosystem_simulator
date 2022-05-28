@@ -11,9 +11,9 @@ var animals = [];
 ///////////////////////
 var cellWidth = 45;
 var USE_ANIMAL_LIMIT = true;
-var numberOfAnimals = 100;
+var numberOfAnimals = 7;
 var animalsLimit = 600;
-var PERCENTAGE_OF_ROCK_FLOOR = 0.9;
+var PERCENTAGE_OF_ROCK_FLOOR = 0.8;
 var MAX_FOOD_OF_CELLS = 1000;
 var CELLCLOCK_TO_REPRODUCE = 10;
 var YEAR = 1;
@@ -65,20 +65,21 @@ const gameLoop = () => {
   if (!pause) {
     FRAMENUM++;
     ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-    for (animal of animals) animal.tick(FRAMENUM);
+
     for (let i = 0; i < height / cellWidth; i++) {
       for (let j = 0; j < width / cellWidth; j++) {
         grid[i][j].tick(FRAMENUM);
       }
     }
 
-    for (animal of animals) animal.render(FRAMENUM);
+    for (animal of animals) animal.tick(FRAMENUM);
 
     for (let i = 0; i < height / cellWidth; i++) {
       for (let j = 0; j < width / cellWidth; j++) {
         grid[i][j].render(FRAMENUM);
       }
     }
+    for (animal of animals) animal.render(FRAMENUM);
   }
 
   window.durationOfFrame = Date.now() - (window.lastFrame || 0);

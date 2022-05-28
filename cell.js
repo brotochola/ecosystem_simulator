@@ -1,29 +1,30 @@
 class Cell {
   constructor(y, x, cellWidth, elem) {
     this.cellWidth = cellWidth;
+    this.pos = new p5.Vector(x * cellWidth, y * cellWidth);
     this.x = x;
     this.y = y;
-    this.container = elem;
+    // this.container = elem;
     this.animalsHere = [];
 
-    this.elem = document.createElement("cell");
-    this.elem.style.width = cellWidth + "px";
-    this.elem.style.height = cellWidth + "px";
-    this.elem.style.left = x * cellWidth + "px";
-    this.elem.style.top = y * cellWidth + "px";
+    // this.elem = document.createElement("cell");
+    // this.elem.style.width = cellWidth + "px";
+    // this.elem.style.height = cellWidth + "px";
+    // this.elem.style.left = x * cellWidth + "px";
+    // this.elem.style.top = y * cellWidth + "px";
 
-    this.elem.classList.add("cell");
-    this.elem.setAttribute("x", x);
-    this.elem.setAttribute("y", y);
-    this.container.appendChild(this.elem);
-    this.elem.onclick = (e) => {
-      console.log("# CLICK ON CELL", this);
-      // for (let a of animals) {
-      //   a.target = this;
-      // }
-    };
+    // this.elem.classList.add("cell");
+    // this.elem.setAttribute("x", x);
+    // this.elem.setAttribute("y", y);
+    // this.container.appendChild(this.elem);
+    // this.elem.onclick = (e) => {
+    //   console.log("# CLICK ON CELL", this);
+    //   // for (let a of animals) {
+    //   //   a.target = this;
+    //   // }
+    // };
 
-    this.typesOfSoil = ["grass", "dirt", "berries"];
+    this.typesOfSoil = ["grass", "dirt"];
 
     this.type = Math.floor(Math.random() * this.typesOfSoil.length);
 
@@ -61,43 +62,45 @@ class Cell {
 
   getNeighbours() {
     let arrRet = [];
+    let x = this.pos.x / this.cellWidth;
+    let y = this.pos.y / this.cellWidth;
     try {
-      arrRet.push(grid[this.y - 1][this.x - 1]);
+      arrRet.push(grid[y - 1][x - 1]);
     } catch (e) {}
     try {
-      arrRet.push(grid[this.y - 1][this.x]);
+      arrRet.push(grid[y - 1][x]);
     } catch (e) {}
     try {
-      arrRet.push(grid[this.y - 1][this.x + 1]);
+      arrRet.push(grid[y - 1][x + 1]);
     } catch (e) {}
     try {
-      arrRet.push(grid[this.y][this.x - 1]);
+      arrRet.push(grid[y][x - 1]);
     } catch (e) {}
     try {
-      arrRet.push(grid[this.y][this.x + 1]);
+      arrRet.push(grid[y][x + 1]);
     } catch (e) {}
     try {
-      arrRet.push(grid[this.y + 1][this.x - 1]);
+      arrRet.push(grid[y + 1][x - 1]);
     } catch (e) {}
     try {
-      arrRet.push(grid[this.y + 1][this.x]);
+      arrRet.push(grid[y + 1][x]);
     } catch (e) {}
     try {
-      arrRet.push(grid[this.y + 1][this.x + 1]);
+      arrRet.push(grid[y + 1][x + 1]);
     } catch (e) {}
     return arrRet.filter((k) => k);
   }
 
   getPos() {
     return new p5.Vector(
-      this.x * this.cellWidth + this.cellWidth / 2,
-      this.y * this.cellWidth + this.cellWidth / 2
+      this.pos.x * this.cellWidth + this.cellWidth / 2,
+      this.pos.y * this.cellWidth + this.cellWidth / 2
     );
   }
 
-  color(col) {
-    this.elem.style.backgroundColor = col;
-  }
+  // color(col) {
+  //   this.elem.style.backgroundColor = col;
+  // }
 
   tick(FRAMENUM) {
     if (this.type == 1) return;
@@ -123,28 +126,49 @@ class Cell {
     if (this.food < 0) this.food = 0;
   }
 
-  render(FRAMENUM) {
-    if (this.type == 1) this.elem.style.backgroundColor = "gray";
-
-    if (this.type != 1) {
-      this.coefOpacity = this.food / this.maxFood;
-      this.elem.innerHTML =
-        Math.floor(this.food) + "/" + Math.floor(this.maxFood);
-      if (this.type == 0) {
-        //grass
-        let bgVal = "rgba(0,255,0," + this.coefOpacity.toFixed(5) + ")";
-
-        this.elem.style.backgroundColor = bgVal;
-      } else if (this.type == 2) {
-        //berries
-        if (this.type == 2) {
-          //grass
-          let bgVal = "rgba(255,0,0," + this.coefOpacity.toFixed(5) + ")";
-
-          this.elem.style.backgroundColor = bgVal;
-        }
-      }
+  getColor() {
+    if (this.type == 1) return "gray";
+    this.coefOpacity = this.food / this.maxFood;
+    if (this.type == 0) {
+      return "rgb(0, " + (this.coefOpacity * 255).toFixed(0) + ", 0)";
+    } else if (this.type == 2) {
+      return "rgb(" + (this.coefOpacity * 255).toFixed(0) + ", 0, 0)";
     }
+  }
+
+  render(FRAMENUM) {
+    ctx.beginPath();
+
+    ctx.rect(
+      this.pos.x - this.cellWidth / 2,
+      this.pos.y - this.cellWidth / 2,
+      this.cellWidth + 1,
+      this.cellWidth + 1
+    );
+    ctx.fillStyle = this.getColor();
+    ctx.fill();
+    ctx.closePath();
+    // if (this.type == 1) this.elem.style.backgroundColor = "gray";
+
+    // if (this.type != 1) {
+    //   this.coefOpacity = this.food / this.maxFood;
+    //   this.elem.innerHTML =
+    //     Math.floor(this.food) + "/" + Math.floor(this.maxFood);
+    //   if (this.type == 0) {
+    //     //grass
+    //     let bgVal = "rgba(0,255,0," + this.coefOpacity.toFixed(5) + ")";
+
+    //     this.elem.style.backgroundColor = bgVal;
+    //   } else if (this.type == 2) {
+    //     //berries
+    //     if (this.type == 2) {
+    //       //grass
+    //       let bgVal = "rgba(255,0,0," + this.coefOpacity.toFixed(5) + ")";
+
+    //       this.elem.style.backgroundColor = bgVal;
+    //     }
+    //   }
+    // }
 
     // if (this.type == 0 && this.food == 0) {
     //   this.type = 1;

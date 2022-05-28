@@ -362,7 +362,7 @@ class Animal {
     // let increase =
     //   this.genes.hungerIncrease * (this.genes.lifeExpectancy / this.age);
     // if (increase > 1) increase = 1;
-    this.hunger += this.hungerIncrease;
+    this.hunger += this.genes.hungerIncrease;
 
     this.checkDeath();
 
