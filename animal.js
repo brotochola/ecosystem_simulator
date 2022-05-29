@@ -65,7 +65,7 @@ class Animal {
       chancesToGetPregnant: Math.random(),
       minAgeToGetPregnant: 10 * YEAR,
       clockEvery: 10,
-      maxMutationWhenBreeding: Math.random() * 0.2 - 0.1,
+      maxMutationWhenBreeding: Math.random() * 0.6 - 0.3,
       maxSize: RESOLUTION * (Math.random() * 10 + 5),
       maxHealth: 100,
       r: Math.floor(Math.random() * 255),
