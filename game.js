@@ -12,6 +12,7 @@ var animals = [];
 ///////////////////////
 var cellWidth = 30;
 var USE_ANIMAL_LIMIT = true;
+var MAX_ANIMALS_PER_CELL = 10;
 var numberOfAnimals = 60;
 var animalsLimit = 200;
 var PERCENTAGE_OF_ROCK_FLOOR = 0.8;
@@ -111,6 +112,34 @@ const gameLoop = () => {
 
   requestAnimationFrame(gameLoop);
 };
+const generateID = () => {
+  let vowels = "aeiou";
+  let numbers = "0123456789";
+  let name = Math.random().toString(36).substring(2, 9);
+  let newName = "";
+  for (let i = 0; i < name.length; i++) {
+    try {
+      let letter = name[i];
+      let isItConsonant = vowels.indexOf(letter) == -1;
+      let isPrevConsonant = vowels.indexOf(name[i - 1]) == -1;
+      if (isItConsonant && isPrevConsonant)
+        newName += vowels[Math.floor(Math.random() * vowels.length)];
+
+      if (numbers.indexOf(letter) == -1) newName += letter;
+    } catch (e) {}
+  }
+  newName = newName.substring(
+    Math.floor(Math.random() * 4),
+    Math.floor(Math.random() * 5 + 5)
+  );
+  if (newName.length < 4)
+    newName += vowels[Math.floor(Math.random() * vowels.length)];
+
+  return capitalize(newName);
+};
+function capitalize(word) {
+  return word[0].toUpperCase() + word.slice(1).toLowerCase();
+}
 
 const showDataInControlPanel = () => {
   let every = document.querySelector("#everyHowManyFrames").value;

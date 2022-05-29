@@ -17,11 +17,13 @@ class Animal {
     y,
     startingAge,
     generation,
-    parentsHunger
+    parentsHunger,
+    lastName
   ) {
     this.cellWidth = cellWidth;
     this.grid = grid;
-    this.id = Math.random().toString(36).substring(2, 9);
+    this.id = generateID();
+    this.lastName = lastName || generateID();
     this.type = "animal";
     this.generation = generation ? generation : 0;
 
@@ -44,7 +46,7 @@ class Animal {
 
     //GENES
     this.genes = genes || {
-      sightLimit: 20,
+      sightLimit: 10,
       fear: Math.random(),
       diet: Math.random(), //0 is carnivore, 1herbi, 0.5 omni
       maxSpeed: 1 * Math.random() + 1,
@@ -76,6 +78,7 @@ class Animal {
     this.defineSize();
     //STARTING VALUES
     this.pregnant = false;
+    this.prevPregnancyValue = false;
     this.whenDidIGetPregnant = null;
 
     this.hunger = this.getStartingHunger(parentsHunger);
@@ -112,7 +115,8 @@ class Animal {
     if (this.target) {
       if ("getPos" in this.target && this.target.getPos instanceof Function) {
         let targetsPos = this.target.getPos();
-        this.vel = p5.Vector.sub(targetsPos, this.pos);
+
+        this.vel = p5.Vector.sub(targetsPos, this.getPos());
       }
     } else {
       this.vel.add(
@@ -189,8 +193,11 @@ class Animal {
       if (distA > distB) return 1;
       else return -1;
     });
+    let filteredCells = cells.filter(
+      (k) => k.animalsHere.length < MAX_ANIMALS_PER_CELL
+    );
 
-    return cells;
+    return filteredCells;
   }
 
   lookForAFood() {
@@ -234,7 +241,7 @@ class Animal {
 
     let numKids =
       Math.floor(this.genes.maxChildrenWhenPregnant * Math.random()) + 1;
-
+    console.log(this.id + " " + this.lastName, "got ", numKids, " kids");
     for (let i = 0; i < numKids; i++) {
       let newAnimal = new Animal(
         this.cellWidth,
@@ -244,7 +251,8 @@ class Animal {
         this.pos.y,
         0,
         this.generation + 1,
-        this.hunger
+        this.hunger,
+        this.lastName
       );
       animals.push(newAnimal);
     }
@@ -413,6 +421,7 @@ class Animal {
 
   tick(FRAMENUM) {
     this.FRAMENUM = FRAMENUM;
+    this.prevPregnancyValue = this.pregnant;
     if (this.dead) {
       this.decomposition += 2;
       //this.decomposition *= 1.1;
@@ -516,11 +525,10 @@ class Animal {
   }
 
   drawPregnancyHappening() {
-    console.log(1);
     ctx.moveTo(this.pos.x, this.pos.y);
 
     ctx.beginPath();
-    ctx.arc(this.pos.x, this.pos.y, this.size * 5, 0, Math.PI * 2);
+    ctx.arc(this.pos.x, this.pos.y, this.size * 1.5, 0, Math.PI * 2);
 
     ctx.fillStyle = "#FF0000";
 
@@ -550,7 +558,8 @@ class Animal {
   }
 
   getPregnant() {
-    this.drawPregnancyHappening();
+    //this.drawPregnancyHappening();
+    console.log(this.id + " " + this.lastName, "got p");
     this.pregnant = JSON.parse(JSON.stringify(this.target.genes));
 
     this.target = null;
@@ -699,7 +708,7 @@ class Animal {
 
     ctx.beginPath();
     ctx.lineWidth = 3;
-    let strokeColor =
+    this.strokeColor =
       this.state == 6
         ? "white" // eating white
         : this.state == 0
@@ -714,8 +723,8 @@ class Animal {
 
     ctx.arc(this.pos.x, this.pos.y, this.size / 2, 0, 2 * Math.PI);
 
-    if (strokeColor && !this.dead) {
-      ctx.strokeStyle = strokeColor;
+    if (this.strokeColor && !this.dead) {
+      ctx.strokeStyle = this.strokeColor;
       ctx.stroke();
     }
 
@@ -725,29 +734,41 @@ class Animal {
     //DIRECTION LINE
 
     if (!this.dead) {
-      ctx.beginPath();
-
-      ctx.moveTo(this.pos.x, this.pos.y);
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = "#00000077";
-      ctx.lineTo(this.pos.x + this.vel.x * 3, this.pos.y + this.vel.y * 3);
-      ctx.stroke();
-      ctx.closePath();
+      this.drawDirectionLine();
 
       //TARGET LINE
       if (this.target && (this.state == 4 || this.state == 1)) {
-        ctx.moveTo(this.pos.x, this.pos.y);
-        ctx.lineTo(this.target.pos.x, this.target.pos.y);
-        ctx.strokeStyle = strokeColor;
-
-        ctx.stroke();
+        this.drawTargetLine();
       }
+
+      if (this.pregnant && !this.prevPregnancyValue)
+        this.drawPregnancyHappening();
     }
 
     ctx.restore();
     //ctx.rotate(1);
 
     //ctx.fill(
+  }
+
+  drawDirectionLine() {
+    ctx.beginPath();
+
+    ctx.moveTo(this.pos.x, this.pos.y);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "#00000077";
+    ctx.lineTo(this.pos.x + this.vel.x * 3, this.pos.y + this.vel.y * 3);
+    ctx.stroke();
+    ctx.closePath();
+  }
+
+  drawTargetLine() {
+    ctx.beginPath();
+    ctx.moveTo(this.pos.x, this.pos.y);
+    ctx.lineTo(this.target.pos.x, this.target.pos.y);
+    ctx.strokeStyle = this.strokeColor;
+
+    ctx.stroke();
   }
 
   getCell() {
