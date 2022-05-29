@@ -1,4 +1,5 @@
 var FRAMENUM = 0;
+var renderCheckBox;
 var grid = [];
 var ctx;
 var pause = false;
@@ -9,13 +10,13 @@ var animals = [];
 /////////////////////////
 ////control panel ///////
 ///////////////////////
-var cellWidth = 45;
+var cellWidth = 30;
 var USE_ANIMAL_LIMIT = true;
-var numberOfAnimals = 7;
-var animalsLimit = 600;
+var numberOfAnimals = 60;
+var animalsLimit = 200;
 var PERCENTAGE_OF_ROCK_FLOOR = 0.8;
-var MAX_FOOD_OF_CELLS = 1000;
-var CELLCLOCK_TO_REPRODUCE = 10;
+var MAX_FOOD_OF_CELLS = 300;
+var CELLCLOCK_TO_REPRODUCE = 100;
 var YEAR = 1;
 var MIN_DISTANCE_FACTOR_TO_INTERACT = 2;
 var RESOLUTION = 1;
@@ -32,6 +33,20 @@ const togglePanel = () => {
   if (panel.style.display == "none") panel.style.display = "block";
   else panel.style.display = "none";
 };
+
+function uniq(a) {
+  var prims = { boolean: {}, number: {}, string: {} },
+    objs = [];
+
+  return a.filter(function (item) {
+    var type = typeof item;
+    if (type in prims)
+      return prims[type].hasOwnProperty(item)
+        ? false
+        : (prims[type][item] = true);
+    else return objs.indexOf(item) >= 0 ? false : objs.push(item);
+  });
+}
 
 const getMaxVal = (val, isItAGene) => {
   let max = 0;
@@ -73,13 +88,20 @@ const gameLoop = () => {
     }
 
     for (animal of animals) animal.tick(FRAMENUM);
+    if (renderCheckBox.checked) {
+      if (document.querySelector("canvas").style.display != "block")
+        document.querySelector("canvas").style.display = "block";
 
-    for (let i = 0; i < height / cellWidth; i++) {
-      for (let j = 0; j < width / cellWidth; j++) {
-        grid[i][j].render(FRAMENUM);
+      for (let i = 0; i < height / cellWidth; i++) {
+        for (let j = 0; j < width / cellWidth; j++) {
+          grid[i][j].render(FRAMENUM);
+        }
       }
+      for (animal of animals) animal.render(FRAMENUM);
+    } else {
+      if (document.querySelector("canvas").style.display != "none")
+        document.querySelector("canvas").style.display = "none";
     }
-    for (animal of animals) animal.render(FRAMENUM);
   }
 
   window.durationOfFrame = Date.now() - (window.lastFrame || 0);
@@ -100,6 +122,9 @@ const showDataInControlPanel = () => {
   ) {
     let cont = document.querySelector("#contentOfControl");
     let content = "<p>ANIMALS:" + animals.length + "</p>";
+    content += "<p>FPS: " + frameRate + "<p>";
+    content += "<p>generation: " + getMaxGeneration() + "<p>";
+
     content += "<p>total food: " + getAllAvailableFood() + "<p>";
     content +=
       "<p>age/life expect" +
@@ -176,7 +201,7 @@ const init = () => {
   canvas.height = height * RESOLUTION;
 
   ctx = canvas.getContext("2d");
-
+  renderCheckBox = document.querySelector("#render");
   gameLoop();
 };
 

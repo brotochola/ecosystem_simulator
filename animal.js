@@ -34,7 +34,7 @@ class Animal {
       "horny",
       "givingBirth",
       "eating",
-      "pregnant",
+      "dead",
     ];
 
     //CONSCIOUSNESS
@@ -44,15 +44,16 @@ class Animal {
 
     //GENES
     this.genes = genes || {
-      sightLimit: Math.random() * 10,
+      sightLimit: 20,
       fear: Math.random(),
       diet: Math.random(), //0 is carnivore, 1herbi, 0.5 omni
-      maxSpeed: 5 * Math.random() + 1,
+      maxSpeed: 1 * Math.random() + 1,
       maxAcceleration: 1,
       compatibilityTreshhold: 100, //if 1 they can breed with anyone
       likability: Math.random(),
       likabilityTreshold: Math.random() * 0.5,
-      lifeExpectancy: 25 * YEAR,
+      lifeExpectancy: 65 * YEAR,
+      healthRecoveryWhenEating: Math.random() * 0.5,
       hungerLimit: 10,
       hungerIncrease: 0.03,
       healthDecreaseByHunger: 0.1,
@@ -63,7 +64,7 @@ class Animal {
       minAgeToGetPregnant: 10 * YEAR,
       clockEvery: 10,
       maxMutationWhenBreeding: Math.random() * 0.2 - 0.1,
-      maxSize: Math.random() * 6 + 6,
+      maxSize: RESOLUTION * (Math.random() * 10 + 5),
       maxHealth: 100,
       r: Math.floor(Math.random() * 255),
       g: Math.floor(Math.random() * 255),
@@ -71,13 +72,13 @@ class Animal {
     };
 
     if (this.genes.clockEvery < 1) this.genes.clockEvery = 1;
+    if (this.genes.sightLimit < 1) this.genes.sightLimit = 1;
     this.defineSize();
     //STARTING VALUES
     this.pregnant = false;
     this.whenDidIGetPregnant = null;
-    this.hunger =
-      (parentsHunger ? parentsHunger * 1 : 0) +
-      this.genes.hungerLimit * Math.random() * 0.5;
+
+    this.hunger = this.getStartingHunger(parentsHunger);
 
     this.startingHunger = Number(this.hunger);
 
@@ -98,6 +99,10 @@ class Animal {
     //console.log("## new animal is born", this.id);
   }
 
+  getStartingHunger(parentsHunger) {
+    return (parentsHunger || 0) + this.genes.hungerLimit * Math.random();
+  }
+
   getPos() {
     return this.pos.copy();
   }
@@ -108,12 +113,16 @@ class Animal {
       if ("getPos" in this.target && this.target.getPos instanceof Function) {
         let targetsPos = this.target.getPos();
         this.vel = p5.Vector.sub(targetsPos, this.pos);
-      } else {
-        debugger;
       }
+    } else {
+      this.vel.add(
+        new p5.Vector(Math.random(), Math.random()).setMag(
+          Math.random() * this.genes.maxSpeed
+        )
+      );
     }
 
-    this.vel.limit(this.genes.maxSpeed);
+    //  this.vel.limit(this.genes.maxSpeed);
     // debugger;
 
     //  console.log(this.vel);
@@ -128,7 +137,10 @@ class Animal {
     //   "hunger:",
     //   Math.floor(this.hunger) + "/" + Math.floor(this.genes.hungerLimit)
     // );
+    this.pregnant = false;
+    this.target = null;
     this.dead = true;
+    this.state = 7; //dead
 
     //animals.splice(i, 1);
 
@@ -151,16 +163,47 @@ class Animal {
     }
   }
 
+  getCloseCells(howMany) {
+    if (!howMany) howMany = Math.floor(this.genes.sightLimit) / 2;
+    let cell = this.getCell();
+    if (!cell) return [];
+    let cells = [cell];
+
+    let x = cell.x;
+    let y = cell.y;
+    let fromY = y - howMany;
+    let toY = y + howMany;
+    let fromX = x - howMany;
+    let toX = x + howMany;
+    for (let i = fromY; i <= toY; i++) {
+      for (let j = fromX; j <= toX; j++) {
+        if (grid[i] && grid[i][j]) cells.push(grid[i][j]);
+      }
+    }
+
+    // THE SORT FUNCTION PUTS THE NEIGHTBOORS CELLS FIRST:
+
+    cells = cells.sort((a, b) => {
+      let distA = Math.abs(cell.x - a.x) + Math.abs(cell.y - a.y);
+      let distB = Math.abs(cell.x - b.x) + Math.abs(cell.y - b.y);
+      if (distA > distB) return 1;
+      else return -1;
+    });
+
+    return cells;
+  }
+
   lookForAFood() {
     let mycell = this.getCell();
     if (!mycell) return;
-    let cells = [mycell, ...mycell.getNeighbours()];
+    let cells = this.getCloseCells();
 
     for (let cell of cells) {
-      if (cell instanceof Cell && "food" in cell) {
+      if ("food" in cell) {
         if (cell.food > 0) {
           if (this.genes.diet > 0) {
             this.target = cell;
+            return cell;
           }
         }
       }
@@ -313,33 +356,55 @@ class Animal {
   accordingToStuffChangeState() {
     // if (this.pregnant) this.state = 7;
     if (this.amIHungry()) {
-      this.state = 1;
+      if (this.state != 6) this.state = 1;
     } else if (
       this.amIOldEnoughToFuck() &&
       this.amIHealthy() &&
-      !this.pregnant
+      !this.pregnant &&
+      this.state == 0
     ) {
       this.state = 4;
-    } else if (!this.amIHungry()) {
-      this.state = 0;
     }
+  }
+
+  goIdle() {
+    this.state = 0;
+    this.target = null;
+
+    this.lookForAFood();
   }
 
   accordingToStateSetTarget() {
     if (this.pregnant) this.checkIfImGivingBirth();
 
     if (this.state == 4) {
-      this.getClosestFuckBuddy();
-      this.checkIfFuckBuddyIsClose();
-      if (this.pregnant) this.state = 0;
+      if (this.pregnant) {
+        return this.goIdle();
+      }
+      let closest = this.getClosestFuckBuddy();
+      if (closest) this.target = closest;
+      if (this.target) this.checkIfFuckBuddyIsClose();
     } else if (this.state == 1) {
-      if (!this.eatFromCell()) this.lookForAFood();
-      else {
+      //IF IT'S HUNGRY
+      //AND CAN'T EAT FROM THIS CELL
+      if (!this.eatFromCell()) {
+        if (this.amIHungry()) this.lookForAFood(); //WILL LOOK FOR FOOD
+      } else {
+        //IF IT COULD FIND FOOD IN THIS CELL CHANGES THE STATE
         this.state = 6;
       }
     } else if (this.state == 6) {
       //eating
-      this.vel = new p5.Vector(0, 0);
+
+      if (this.eatFromCell()) this.vel = new p5.Vector(0, 0);
+      else {
+        if (this.amIHungry()) this.state = 1;
+        else this.goIdle();
+      }
+      //WILL EAT UNTIL HE'S OK
+      if (this.hunger <= 1) {
+        this.goIdle();
+      }
     } else if (this.state == 0) {
       //IDLE
       //  this.vel = new p5.Vector(0, 0);
@@ -349,7 +414,8 @@ class Animal {
   tick(FRAMENUM) {
     this.FRAMENUM = FRAMENUM;
     if (this.dead) {
-      this.decomposition++;
+      this.decomposition += 2;
+      //this.decomposition *= 1.1;
       if (this.decomposition > 100) {
         let i = this.getMyI();
         animals.splice(i, 1);
@@ -394,6 +460,7 @@ class Animal {
       if (this.ImAtCell) this.ImAtCell.addMe(this);
     }
 
+    //if (this.ImAtCell) this.ImAtCell.type = 0; //THIS LINE MAKES THE ANIMAL DRAW GRASS
     ///update it's data:
     this.cellX = Math.floor(this.pos.x / this.cellWidth);
     this.cellY = Math.floor(this.pos.y / this.cellWidth);
@@ -404,7 +471,7 @@ class Animal {
 
   saveInLocalStorage() {
     if (this.getMyI() == 0) {
-      if (!localStorage["animal0"]) localStorage["animal0"] = "{}";
+      if (!window.animal0) window.animal0 = {};
 
       let me = {
         id: this.id,
@@ -424,9 +491,9 @@ class Animal {
         }
       }
 
-      let obj = JSON.parse(localStorage["animal0"]);
+      let obj = window.animal0;
       obj[this.FRAMENUM] = me;
-      localStorage["animal0"] = JSON.stringify(obj);
+      window.animal0 = obj;
     }
   }
 
@@ -450,9 +517,10 @@ class Animal {
 
   drawPregnancyHappening() {
     console.log(1);
-    ctx.beginPath();
     ctx.moveTo(this.pos.x, this.pos.y);
-    ctx.arc(this.pos.x, this.pos.y, this.size, 0, Math.PI * 2);
+
+    ctx.beginPath();
+    ctx.arc(this.pos.x, this.pos.y, this.size * 5, 0, Math.PI * 2);
 
     ctx.fillStyle = "#FF0000";
 
@@ -461,7 +529,7 @@ class Animal {
   }
 
   checkIfFuckBuddyIsClose() {
-    if (this.pregnant) return false;
+    if (!(this.target instanceof Animal)) return;
     if (this.target && this.target.pos) {
       let dist = distance(this.pos, this.target.pos);
       if (dist) {
@@ -471,17 +539,20 @@ class Animal {
         ) {
           if (Math.random() < this.genes.chancesToGetPregnant) {
             this.getPregnant();
+            return true;
           }
 
           // this.separation();
         }
       }
     }
+    return;
   }
 
   getPregnant() {
     this.drawPregnancyHappening();
     this.pregnant = JSON.parse(JSON.stringify(this.target.genes));
+
     this.target = null;
     this.whenDidIGetPregnant = this.FRAMENUM;
   }
@@ -491,8 +562,9 @@ class Animal {
     if (mycell.food > 0) {
       mycell.food--;
       this.hunger--;
+      this.health += this.genes.healthRecoveryWhenEating;
       //this.health++;
-      this.target = null;
+      //this.target = null;
       return true;
     }
     return false;
@@ -524,47 +596,25 @@ class Animal {
   }
 
   getCloseAnimals() {
-    try {
-      let ret = [];
+    let animalsToRet = [];
+    let cells = this.getCloseCells();
 
-      if (this.ImAtCell) {
-        let cells = this.ImAtCell.getNeighbours();
-        for (let cell of cells) {
-          if (cell) {
-            for (let cell2 of cell.getNeighbours()) {
-              if (cell2) {
-                for (animal of cell2.animalsHere) {
-                  //check if i dont have it
-                  let found = false;
-                  for (let animsss of ret) {
-                    if (animsss == animal) {
-                      found = true;
-                    }
-                  }
-                  if (!found) ret.push(animal);
-                }
-              }
-            }
-          }
-        }
-        if (!Array.isArray(ret)) debugger;
-        return ret.filter((k) => k != this);
+    for (let c of cells) {
+      for (let a of c.animalsHere) {
+        if (a.id != this.id) animalsToRet.push(a);
       }
-    } catch (e) {
-      return [];
     }
+
+    return uniq(animalsToRet);
   }
 
   getClosestFuckBuddy() {
     let aas = this.getCloseAnimals();
-    if (aas && Array.isArray(aas)) {
-      for (animal of aas) {
-        if (this.amICompatibleToBreedWith(animal)) {
-          this.target = animal;
-          return animal;
-        }
-      }
-    }
+    let filteredCloseAnimals = aas.filter((k) =>
+      this.amICompatibleToBreedWith(k)
+    );
+
+    return filteredCloseAnimals[0];
   }
 
   areWeTheSameSpecies(animal) {
@@ -598,6 +648,8 @@ class Animal {
   };
 
   amICompatibleToBreedWith(animal) {
+    if (animal.dead) return false;
+
     let areWeSimilar = this.areWeTheSameSpecies(animal);
 
     let legalAge = this.amIOldEnoughToFuck() && animal.amIOldEnoughToFuck();
@@ -625,24 +677,6 @@ class Animal {
   }
 
   render() {
-    // if (this.pregnant) {
-    //   this.elem.style.backgroundColor = "white";
-    // } else {
-    //   this.elem.style.backgroundColor = this.getColorFromGenes();
-    // }
-    // if (this.dead) {
-    //   this.elem.style.backgroundColor = "black";
-    // }
-
-    // let transform = "translate3d(" + this.pos.x + "px," + this.pos.y + "px,0)";
-    // this.elem.style.transform = transform;
-    // this.elem.style.width = this.size + "px";
-    // this.elem.style.height = this.size + "px";
-
-    this.renderCanvas();
-  }
-
-  renderCanvas() {
     ctx.save();
     ctx.moveTo(this.pos.x, this.pos.y);
     ctx.fillStyle = this.getColorFromGenes();
@@ -664,26 +698,31 @@ class Animal {
     if (ageRatio < 0) ageRatio = 0;
 
     ctx.beginPath();
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 3;
     let strokeColor =
-      "rgb(" +
-      (hungerRatio * 255).toFixed(0) +
-      "," +
-      (ageRatio * 255).toFixed(0) +
-      "," +
-      (healthRatio * 255).toFixed(0) +
-      ")";
-
-    ctx.strokeStyle = this.dead ? "#000000" : strokeColor;
+      this.state == 6
+        ? "white" // eating white
+        : this.state == 0
+        ? "#0000ff" //idle blue
+        : this.state == 1
+        ? "#00ff00" //hungry green
+        : this.state == 4
+        ? "#ff0000" //horny red
+        : this.dead
+        ? "#000000" //dead black
+        : null;
 
     ctx.arc(this.pos.x, this.pos.y, this.size / 2, 0, 2 * Math.PI);
 
+    if (strokeColor && !this.dead) {
+      ctx.strokeStyle = strokeColor;
+      ctx.stroke();
+    }
+
     ctx.fill();
-    if (!this.dead) ctx.stroke();
     ctx.closePath();
 
     //DIRECTION LINE
-    //    ctx.stroke();
 
     if (!this.dead) {
       ctx.beginPath();
@@ -693,6 +732,16 @@ class Animal {
       ctx.strokeStyle = "#00000077";
       ctx.lineTo(this.pos.x + this.vel.x * 3, this.pos.y + this.vel.y * 3);
       ctx.stroke();
+      ctx.closePath();
+
+      //TARGET LINE
+      if (this.target && (this.state == 4 || this.state == 1)) {
+        ctx.moveTo(this.pos.x, this.pos.y);
+        ctx.lineTo(this.target.pos.x, this.target.pos.y);
+        ctx.strokeStyle = strokeColor;
+
+        ctx.stroke();
+      }
     }
 
     ctx.restore();

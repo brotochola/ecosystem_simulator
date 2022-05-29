@@ -92,10 +92,7 @@ class Cell {
   }
 
   getPos() {
-    return new p5.Vector(
-      this.pos.x * this.cellWidth + this.cellWidth / 2,
-      this.pos.y * this.cellWidth + this.cellWidth / 2
-    );
+    return this.pos.copy();
   }
 
   // color(col) {
@@ -105,9 +102,10 @@ class Cell {
   tick(FRAMENUM) {
     if (this.type == 1) return;
     //EVERY 10 FRAMES THEY GET 1 MORE FOOD, WHEN THEY GET TO THE LIMIT THEY GROW OUTWARDS
+    if (this.food <= 0) this.type = 1;
     if (Math.floor(Math.random() * CELLCLOCK_TO_REPRODUCE) == 0) {
       this.food++;
-      if (this.food >= this.maxFood) {
+      if (this.food >= this.maxFood * 0.9) {
         this.food = this.maxFood;
         let neighs = this.getNeighbours();
         //console.log(neighs);
@@ -130,9 +128,9 @@ class Cell {
     if (this.type == 1) return "gray";
     this.coefOpacity = this.food / this.maxFood;
     if (this.type == 0) {
-      return "rgb(0, " + (this.coefOpacity * 255).toFixed(0) + ", 0)";
+      return "rgb(0, " + (this.coefOpacity * 200 + 50).toFixed(0) + ", 0)";
     } else if (this.type == 2) {
-      return "rgb(" + (this.coefOpacity * 255).toFixed(0) + ", 0, 0)";
+      return "rgb(" + (this.coefOpacity * 200 + 50).toFixed(0) + ", 0, 0)";
     }
   }
 
