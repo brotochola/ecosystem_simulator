@@ -4,14 +4,14 @@
     <script src="p5.min.js"></script>
 
     <style>
-        #animalContainer {
+        /* #animalContainer {
             transform: translate3d(0, 0, 0);
             pointer-events: none;
-        }
+        } */
 
-        #game {
+        /* #game {
             filter: blur(10px)
-        }
+        } */
 
         #game,
         #animalContainer,
@@ -29,14 +29,8 @@
             z-index: 99;
         }
 
-        .cell {
-            pointer-events: all;
-            position: absolute;
-            display: inline;
-            /* border: 1px solid #eeeeee */
-        }
 
-        animal {
+        /* animal {
             pointer-events: all;
             border: 1px solid rgba(0, 0, 0, 0.5);
             position: absolute;
@@ -44,7 +38,7 @@
             border-radius: 100%;
             z-index: 100;
             transform: translate(-50%, -50%)
-        }
+        } */
 
         #pause,
         #hidePanel {
@@ -61,8 +55,8 @@
 
         canvas {
             z-index: 99999;
-            pointer-events: none;
-            touch-action: none;
+            /* pointer-events: none;
+            touch-action: none; */
         }
 
         control {
@@ -93,8 +87,7 @@
     </control>
     <button id="hidePanel" onclick="togglePanel()">togglePanel</button>
     <button id="pause" onclick="pausebutton()">pause</button>
-    <div id="game">
-    </div>
+
 
     <script src="cell.js"></script>
     <script src="animal.js"></script>

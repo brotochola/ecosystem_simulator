@@ -20,6 +20,7 @@ class Animal {
     parentsHunger,
     lastName
   ) {
+    this.log = [];
     this.cellWidth = cellWidth;
     this.grid = grid;
     this.id = generateID();
@@ -29,21 +30,22 @@ class Animal {
 
     //CONSTANTS:
     this.possibleStates = [
-      "idle",
-      "hungry",
-      "escaping",
-      "goingToGroup",
-      "horny",
-      "givingBirth",
-      "eating",
-      "dead",
+      "idle", //0
+      "hungry", //1
+      "escaping", //2
+      "goingToGroup", //3
+      "horny", //4
+      "givingBirth", //5
+      "eating", ///6
+      "dead", //7
+      "escapingFromFuckBuddy", //8
     ];
 
     //CONSCIOUSNESS
     this.state = 0; //Math.floor(Math.random() * this.possibleStates.length);
     this.target = null; //this.pickARandomCell();
     this.loneliness = 0; //if very lonely will try to look for someone to fuck, given compatibility and likabilty of the other animal
-
+    this.cellsClose = [];
     //GENES
     this.genes = genes || {
       sightLimit: 10,
@@ -57,17 +59,18 @@ class Animal {
       lifeExpectancy: 65 * YEAR,
       healthRecoveryWhenEating: Math.random() * 0.5,
       hungerLimit: 10,
-      hungerIncrease: 0.03,
+      hungerIncrease: 0.1,
       healthDecreaseByHunger: 0.1,
       healthDecreaseByAge: 1,
       pregnancyDuration: 10 * YEAR,
-      maxChildrenWhenPregnant: Math.floor(Math.random() * 3) + 1,
+      maxChildrenWhenPregnant: Math.floor(Math.random() * 6) + 1,
       chancesToGetPregnant: Math.random(),
       minAgeToGetPregnant: 10 * YEAR,
       clockEvery: 10,
       maxMutationWhenBreeding: Math.random() * 0.6 - 0.3,
       maxSize: RESOLUTION * (Math.random() * 10 + 5),
       maxHealth: 100,
+      partOfPregnancyThatEscapes: Math.random(),
       r: Math.floor(Math.random() * 255),
       g: Math.floor(Math.random() * 255),
       b: Math.floor(Math.random() * 255),
@@ -110,18 +113,34 @@ class Animal {
     return this.pos.copy();
   }
 
+  checkIfTheTargetIsTooFar() {
+    if (!this.target || !this.target.getPos || !this.getPos) return;
+    if (
+      distance(this.target.getPos(), this.getPos()) >
+      this.cellWidth * this.genes.sightLimit
+    ) {
+      this.goIdle();
+    }
+  }
+
   calculateVelVectorAccordingToTarget() {
     if (!("x" in this.vel)) return;
+
     if (this.target) {
       if ("getPos" in this.target && this.target.getPos instanceof Function) {
         let targetsPos = this.target.getPos();
 
-        this.vel = p5.Vector.sub(targetsPos, this.getPos());
+        if (this.state != 8) {
+          this.vel = p5.Vector.sub(targetsPos, this.getPos());
+        } else {
+          //STATE 8 MEANS ESCAPING FROM TARGET
+          this.vel = p5.Vector.sub(this.getPos(), targetsPos);
+        }
       }
     } else {
       this.vel.add(
-        new p5.Vector(Math.random(), Math.random()).setMag(
-          Math.random() * this.genes.maxSpeed
+        new p5.Vector(Math.random() * 2 - 1, Math.random() * 2 - 1).setMag(
+          (Math.random() * this.genes.maxSpeed) / 2
         )
       );
     }
@@ -144,7 +163,9 @@ class Animal {
     this.pregnant = false;
     this.target = null;
     this.dead = true;
+    removeAnimalFromAllCells(this);
     this.state = 7; //dead
+    this.vel = new p5.Vector(0, 0);
 
     //animals.splice(i, 1);
 
@@ -168,6 +189,7 @@ class Animal {
   }
 
   getCloseCells(howMany) {
+    if (this.closeCells.length > 0) return this.closeCells;
     if (!howMany) howMany = Math.floor(this.genes.sightLimit) / 2;
     let cell = this.getCell();
     if (!cell) return [];
@@ -193,19 +215,19 @@ class Animal {
       if (distA > distB) return 1;
       else return -1;
     });
-    let filteredCells = cells.filter(
-      (k) => k.animalsHere.length < MAX_ANIMALS_PER_CELL
-    );
 
-    return filteredCells;
+    return cells;
   }
 
   lookForAFood() {
     let mycell = this.getCell();
     if (!mycell) return;
-    let cells = this.getCloseCells();
+    this.closeCells = this.getCloseCells();
+    let filteredCells = this.closeCells.filter(
+      (k) => k.animalsHere.length < MAX_ANIMALS_PER_CELL
+    );
 
-    for (let cell of cells) {
+    for (let cell of filteredCells) {
       if ("food" in cell) {
         if (cell.food > 0) {
           if (this.genes.diet > 0) {
@@ -241,7 +263,7 @@ class Animal {
 
     let numKids =
       Math.floor(this.genes.maxChildrenWhenPregnant * Math.random()) + 1;
-    console.log(this.id + " " + this.lastName, "got ", numKids, " kids");
+    //console.log(this.id + " " + this.lastName, "got ", numKids, " kids");
     for (let i = 0; i < numKids; i++) {
       let newAnimal = new Animal(
         this.cellWidth,
@@ -273,15 +295,6 @@ class Animal {
     }
 
     return result;
-  }
-
-  checkIfTheresSomeoneTooClose() {
-    if (this.ImAtCell && this.ImAtCell.animalsHere)
-      for (let a of this.ImAtCell.animalsHere) {
-        if (distance(a.pos, this.pos) < this.size) {
-          this.vel = p5.Vector.add(a.pos, this.pos);
-        }
-      }
   }
 
   flockBehaviour() {
@@ -344,7 +357,7 @@ class Animal {
     for (let anim of closeanimals) {
       if (this.areWeTheSameSpecies(anim)) {
         let diff = p5.Vector.sub(this.pos, anim.pos);
-        let dist = distance(anim.pos, this.pos);
+        let dist = distance(this.pos, anim.pos);
 
         diff.div(dist);
         avg.add(diff);
@@ -362,9 +375,9 @@ class Animal {
   }
 
   accordingToStuffChangeState() {
-    // if (this.pregnant) this.state = 7;
     if (this.amIHungry()) {
-      if (this.state != 6) this.state = 1;
+      //STATE 6 IS EATING
+      if (this.state != 6 && this.state != 8) this.state = 1;
     } else if (
       this.amIOldEnoughToFuck() &&
       this.amIHealthy() &&
@@ -372,6 +385,8 @@ class Animal {
       this.state == 0
     ) {
       this.state = 4;
+    } else {
+      // this.state = 0;
     }
   }
 
@@ -406,6 +421,8 @@ class Animal {
 
       if (this.eatFromCell()) this.vel = new p5.Vector(0, 0);
       else {
+        //IF THERE'S NO MORE FOOD IN THIS CELL, BEFORE IT GOES TO STATE 1 (HUNGRY)
+        //IT WILL CHECK IF IT'S STILL HUNGRY (>50%)
         if (this.amIHungry()) this.state = 1;
         else this.goIdle();
       }
@@ -413,15 +430,36 @@ class Animal {
       if (this.hunger <= 1) {
         this.goIdle();
       }
+    } else if (this.state == 8) {
+      //THE FIRST QUARTER OF THE PREGNANCY IT WILL ESCAPE FROM THE LOVER
+      if (
+        this.FRAMENUM - this.whenDidIGetPregnant >
+        this.genes.pregnancyDuration / this.genes.partOfPregnancyThatEscapes
+      ) {
+        this.goIdle();
+      }
     } else if (this.state == 0) {
       //IDLE
-      //  this.vel = new p5.Vector(0, 0);
+      //  if (!this.target) this.lookForFriends();
+    }
+  }
+
+  lookForFriends() {
+    this.closeCells = this.getCloseCells();
+    for (let cell of this.closeCells) {
+      for (let anim of cell.animalsHere) {
+        // if (this.areWeTheSameSpecies(anim)) {
+        this.target = anim;
+        return;
+        // }
+      }
     }
   }
 
   tick(FRAMENUM) {
     this.FRAMENUM = FRAMENUM;
     this.prevPregnancyValue = this.pregnant;
+    this.closeCells = [];
     if (this.dead) {
       this.decomposition += 2;
       //this.decomposition *= 1.1;
@@ -441,8 +479,6 @@ class Animal {
 
     this.checkDeath();
 
-    //  this.checkIfTheresSomeoneTooClose();
-
     this.setLimits();
 
     //this.flockBehaviour();
@@ -450,17 +486,19 @@ class Animal {
     let clockEvery = Math.floor(this.genes.clockEvery);
     clockEvery = clockEvery < 3 ? 3 : clockEvery;
 
-    // if (this.FRAMENUM % clockEvery == 0) {
     this.accordingToStuffChangeState();
     this.accordingToStateSetTarget();
-
     this.calculateVelVectorAccordingToTarget();
-    // }
+
+    if (this.FRAMENUM % clockEvery == 0) {
+      this.checkIfTheTargetIsTooFar();
+    }
 
     //limit the speed
     //this.acc.limit(this.genes.maxAcceleration);
-    this.vel.limit(this.genes.maxSpeed);
     this.vel.add(this.acc);
+    this.makeThemShake();
+    this.vel.limit(this.genes.maxSpeed);
     this.pos.add(this.vel);
 
     if (this.ImAtCell != this.getCell()) {
@@ -469,41 +507,79 @@ class Animal {
       if (this.ImAtCell) this.ImAtCell.addMe(this);
     }
 
+    this.howManyAnimalsInSameCell = (
+      (this.ImAtCell || {}).animalsHere || []
+    ).length;
+
+    this.checkIfItsTooCrowdedHere();
+
     //if (this.ImAtCell) this.ImAtCell.type = 0; //THIS LINE MAKES THE ANIMAL DRAW GRASS
     ///update it's data:
     this.cellX = Math.floor(this.pos.x / this.cellWidth);
     this.cellY = Math.floor(this.pos.y / this.cellWidth);
     this.defineSize();
-
-    this.saveInLocalStorage();
+    //this.showDebug()
   }
 
-  saveInLocalStorage() {
-    if (this.getMyI() == 0) {
-      if (!window.animal0) window.animal0 = {};
-
-      let me = {
-        id: this.id,
-        hu: (this.hunger / this.genes.hungerLimit).toFixed(2),
-        st: this.state,
-        hea: (this.health / this.genes.maxHealth).toFixed(2),
-        tgt: (this.target || {}).type,
-        preg: !!this.pregnant ? 1 : 0,
-        age: (this.age / this.genes.lifeExpectancy).toFixed(2),
-      };
-
-      if (this.target) {
-        try {
-          me.distance2Target = distance(this.pos, this.target.pos).toFixed(2);
-        } catch (e) {
-          //console.warn(e);
-        }
+  checkIfItsTooCrowdedHere() {
+    if (this.howManyAnimalsInSameCell > MAX_ANIMALS_PER_CELL) {
+      this.closeCells = this.getCloseCells();
+      let closeCellsWithRoom = this.closeCells.filter(
+        (k) => k.animalsHere.length < MAX_ANIMALS_PER_CELL && k.food > 0
+      );
+      if (closeCellsWithRoom.length > 0) {
+        this.state = 1;
+        this.target = closeCellsWithRoom[0];
       }
-
-      let obj = window.animal0;
-      obj[this.FRAMENUM] = me;
-      window.animal0 = obj;
     }
+  }
+
+  makeThemShake() {
+    if (this.vel.x == 0 && this.vel.y == 0) {
+      this.vel = new p5.Vector(Math.random() * 2 - 1, Math.random() * 2 - 1);
+    }
+  }
+  showDebug() {
+    if (this.vel.x == 0 && this.vel.y == 0) {
+      console.log(
+        "#",
+        "st",
+        this.state,
+        "h",
+        this.hunger / this.genes.hungerLimit,
+        "age",
+        this.age / this.genes.lifeExpectancy
+      );
+    }
+  }
+
+  saveLog() {
+    //  if (this.getMyI() == 0) {
+    // if (!window.animal0) window.animal0 = {};
+
+    let me = {
+      id: this.id,
+      hu: (this.hunger / this.genes.hungerLimit).toFixed(2),
+      st: this.state,
+      hea: (this.health / this.genes.maxHealth).toFixed(2),
+      tgt: (this.target || {}).id ? this.target.id : (this.target || {}).type,
+      preg: !!this.pregnant ? 1 : 0,
+      age: (this.age / this.genes.lifeExpectancy).toFixed(2),
+      velX: this.vel.x,
+      velY: this.vel.y,
+    };
+
+    if (this.target) {
+      try {
+        me.distance2Target = distance(this.pos, this.target.pos).toFixed(2);
+      } catch (e) {
+        //console.warn(e);
+      }
+    }
+
+    this.log[this.FRAMENUM] = me;
+    //  window.animal0 = obj;
+    // }
   }
 
   defineSize() {
@@ -554,16 +630,16 @@ class Animal {
         }
       }
     }
-    return;
+    return false;
   }
 
   getPregnant() {
-    //this.drawPregnancyHappening();
-    console.log(this.id + " " + this.lastName, "got p");
+    //console.log(this.id + " " + this.lastName, "got p");
     this.pregnant = JSON.parse(JSON.stringify(this.target.genes));
-
-    this.target = null;
+    //THE TARGET IS THE ONE YOU'RE ESCAPING FROM AFTER YOU GOT PREGNANT!
+    //  this.target = null;
     this.whenDidIGetPregnant = this.FRAMENUM;
+    this.state = 8;
   }
   eatFromCell() {
     let mycell = this.getCell();
@@ -601,14 +677,16 @@ class Animal {
     if (this.pos.y > height * RESOLUTION) this.pos.y = 0;
     if (this.pos.y < 0) this.pos.y = height * RESOLUTION;
 
+    //    if(this.target.pos)
+
     // this.target = getCenterCell();
   }
 
   getCloseAnimals() {
     let animalsToRet = [];
-    let cells = this.getCloseCells();
+    this.closeCells = this.getCloseCells();
 
-    for (let c of cells) {
+    for (let c of this.closeCells) {
       for (let a of c.animalsHere) {
         if (a.id != this.id) animalsToRet.push(a);
       }
@@ -712,7 +790,7 @@ class Animal {
       this.state == 6
         ? "white" // eating white
         : this.state == 0
-        ? "#0000ff" //idle blue
+        ? "#2222ff" //idle blue
         : this.state == 1
         ? "#00ff00" //hungry green
         : this.state == 4
@@ -746,9 +824,8 @@ class Animal {
     }
 
     ctx.restore();
-    //ctx.rotate(1);
 
-    //ctx.fill(
+    if (SAVE_LOG_OF_ANIMALS) this.saveLog();
   }
 
   drawDirectionLine() {

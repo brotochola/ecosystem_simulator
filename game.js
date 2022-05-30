@@ -12,15 +12,16 @@ var animals = [];
 ///////////////////////
 var cellWidth = 30;
 var USE_ANIMAL_LIMIT = true;
-var MAX_ANIMALS_PER_CELL = 10;
+var MAX_ANIMALS_PER_CELL = 5;
 var numberOfAnimals = 60;
 var animalsLimit = 500;
 var PERCENTAGE_OF_ROCK_FLOOR = 0.8;
 var MAX_FOOD_OF_CELLS = 400;
-var CELLCLOCK_TO_REPRODUCE = 40;
+var CELLCLOCK_TO_REPRODUCE = 10;
 var YEAR = 1;
 var MIN_DISTANCE_FACTOR_TO_INTERACT = 2;
 var RESOLUTION = 1;
+var SAVE_LOG_OF_ANIMALS = true;
 //////
 const pausebutton = () => {
   console.log("pause");
@@ -77,6 +78,25 @@ const getMaxGeneration = () => {
   }
   return max;
 };
+
+const getTotalNumberOfAnimalsInCells = () => {
+  let t = 0;
+  for (let i = 0; i < height / cellWidth; i++) {
+    for (let j = 0; j < width / cellWidth; j++) {
+      t += grid[i][j].animalsHere.filter((k) => !k.dead).length;
+    }
+  }
+  return t;
+};
+
+const removeAnimalFromAllCells = (animal) => {
+  for (let i = 0; i < height / cellWidth; i++) {
+    for (let j = 0; j < width / cellWidth; j++) {
+      grid[i][j].removeMe(animal);
+    }
+  }
+};
+
 const gameLoop = () => {
   if (!pause) {
     FRAMENUM++;
@@ -89,6 +109,7 @@ const gameLoop = () => {
     }
 
     for (animal of animals) animal.tick(FRAMENUM);
+
     if (renderCheckBox.checked) {
       if (document.querySelector("canvas").style.display != "block")
         document.querySelector("canvas").style.display = "block";
@@ -216,6 +237,14 @@ const createAnimals = (grid) => {
   }
 };
 
+const handleClickOnCanvas = (e) => {
+  let cellX = Math.floor(e.x / cellWidth);
+  let cellY = Math.floor(e.y / cellWidth);
+  let cell = grid[cellY][cellX];
+  window.cell = cell;
+  console.log("#CELL", cell.food, "Animals", cell.animalsHere.length);
+};
+
 const init = () => {
   localStorage.clear();
   grid = createGrid();
@@ -225,6 +254,7 @@ const init = () => {
   console.log("# animals", animals);
 
   canvas = document.createElement("canvas");
+  canvas.onclick = (e) => handleClickOnCanvas(e);
   document.body.appendChild(canvas);
   canvas.width = width * RESOLUTION;
   canvas.height = height * RESOLUTION;
