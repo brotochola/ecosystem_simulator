@@ -122,6 +122,16 @@ class Cell {
       }
     }
     if (this.food < 0) this.food = 0;
+
+    this.checkCorpsesHere();
+  }
+
+  checkCorpsesHere() {
+    let dead = this.animalsHere.filter((k) => k.dead);
+    for (let animal of dead) {
+      this.food += animal.decomposition * 0.01;
+      if (this.food > this.maxFood) this.maxFood = this.food;
+    }
   }
 
   getColor() {

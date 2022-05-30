@@ -13,11 +13,11 @@ var animals = [];
 var cellWidth = 30;
 var USE_ANIMAL_LIMIT = true;
 var MAX_ANIMALS_PER_CELL = 5;
-var numberOfAnimals = 60;
-var animalsLimit = 500;
+var numberOfAnimals = 20;
+var animalsLimit = 1000;
 var PERCENTAGE_OF_ROCK_FLOOR = 0.8;
 var MAX_FOOD_OF_CELLS = 400;
-var CELLCLOCK_TO_REPRODUCE = 10;
+var CELLCLOCK_TO_REPRODUCE = 200;
 var YEAR = 1;
 var MIN_DISTANCE_FACTOR_TO_INTERACT = 2;
 var RESOLUTION = 1;
@@ -200,6 +200,16 @@ const getAnimalByID = (id) => {
   for (let a of animals) {
     if (a.id == id) return a;
   }
+};
+
+const getAvgMaxFood = () => {
+  let total = 0;
+  for (let i = 0; i < height / cellWidth; i++) {
+    for (let j = 0; j < width / cellWidth; j++) {
+      total += grid[i][j].maxFood;
+    }
+  }
+  return Math.floor(total / (grid.length * grid[0].length));
 };
 
 const getAllAvailableFood = () => {

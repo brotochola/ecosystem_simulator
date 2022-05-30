@@ -70,7 +70,7 @@ class Animal {
       maxMutationWhenBreeding: Math.random() * 0.6 - 0.3,
       maxSize: RESOLUTION * (Math.random() * 10 + 5),
       maxHealth: 100,
-      partOfPregnancyThatEscapes: Math.random(),
+      partOfPregnancyThatEscapes: Math.random() * 0.2,
       r: Math.floor(Math.random() * 255),
       g: Math.floor(Math.random() * 255),
       b: Math.floor(Math.random() * 255),
@@ -163,7 +163,7 @@ class Animal {
     this.pregnant = false;
     this.target = null;
     this.dead = true;
-    removeAnimalFromAllCells(this);
+    // removeAnimalFromAllCells(this);
     this.state = 7; //dead
     this.vel = new p5.Vector(0, 0);
 
@@ -386,15 +386,12 @@ class Animal {
     ) {
       this.state = 4;
     } else {
-      // this.state = 0;
     }
   }
 
   goIdle() {
     this.state = 0;
     this.target = null;
-
-    this.lookForAFood();
   }
 
   accordingToStateSetTarget() {
@@ -434,24 +431,38 @@ class Animal {
       //THE FIRST QUARTER OF THE PREGNANCY IT WILL ESCAPE FROM THE LOVER
       if (
         this.FRAMENUM - this.whenDidIGetPregnant >
-        this.genes.pregnancyDuration / this.genes.partOfPregnancyThatEscapes
+        this.genes.pregnancyDuration * this.genes.partOfPregnancyThatEscapes
       ) {
         this.goIdle();
       }
     } else if (this.state == 0) {
       //IDLE
-      //  if (!this.target) this.lookForFriends();
+      // if (!this.target) this.lookForFriends();
     }
   }
 
   lookForFriends() {
     this.closeCells = this.getCloseCells();
     for (let cell of this.closeCells) {
+      if (cell == this.getCell()) continue;
       for (let anim of cell.animalsHere) {
-        // if (this.areWeTheSameSpecies(anim)) {
-        this.target = anim;
-        return;
-        // }
+        if (this.areWeTheSameSpecies(anim)) {
+          this.target = anim;
+          return;
+        }
+      }
+    }
+  }
+  amIDecomposed() {
+    if (this.dead) {
+      this.vel.x = 0;
+      this.vel.y = 0;
+      this.decomposition += 2;
+      //this.decomposition *= 1.1;
+      if (this.decomposition > 100) {
+        let i = this.getMyI();
+        animals.splice(i, 1);
+        removeAnimalFromAllCells(this);
       }
     }
   }
@@ -460,17 +471,14 @@ class Animal {
     this.FRAMENUM = FRAMENUM;
     this.prevPregnancyValue = this.pregnant;
     this.closeCells = [];
-    if (this.dead) {
-      this.decomposition += 2;
-      //this.decomposition *= 1.1;
-      if (this.decomposition > 100) {
-        let i = this.getMyI();
-        animals.splice(i, 1);
-      }
-      return;
-    }
+
     //age, in days/frames
     this.age++;
+
+    if (this.dead) {
+      this.amIDecomposed();
+      return;
+    }
 
     // let increase =
     //   this.genes.hungerIncrease * (this.genes.lifeExpectancy / this.age);
@@ -490,15 +498,16 @@ class Animal {
     this.accordingToStateSetTarget();
     this.calculateVelVectorAccordingToTarget();
 
-    if (this.FRAMENUM % clockEvery == 0) {
-      this.checkIfTheTargetIsTooFar();
-    }
+    // if (this.FRAMENUM % clockEvery == 0) {
+    this.checkIfTheTargetIsTooFar();
+    //}
 
     //limit the speed
     //this.acc.limit(this.genes.maxAcceleration);
     this.vel.add(this.acc);
     this.makeThemShake();
     this.vel.limit(this.genes.maxSpeed);
+
     this.pos.add(this.vel);
 
     if (this.ImAtCell != this.getCell()) {
@@ -535,6 +544,7 @@ class Animal {
   }
 
   makeThemShake() {
+    if (this.dead) return;
     if (this.vel.x == 0 && this.vel.y == 0) {
       this.vel = new p5.Vector(Math.random() * 2 - 1, Math.random() * 2 - 1);
     }
@@ -604,9 +614,9 @@ class Animal {
     ctx.moveTo(this.pos.x, this.pos.y);
 
     ctx.beginPath();
-    ctx.arc(this.pos.x, this.pos.y, this.size * 1.5, 0, Math.PI * 2);
+    ctx.arc(this.pos.x, this.pos.y, this.size, 0, Math.PI * 2);
 
-    ctx.fillStyle = "#FF0000";
+    ctx.fillStyle = "#FFffff77";
 
     ctx.fill();
     ctx.closePath();
@@ -637,7 +647,6 @@ class Animal {
     //console.log(this.id + " " + this.lastName, "got p");
     this.pregnant = JSON.parse(JSON.stringify(this.target.genes));
     //THE TARGET IS THE ONE YOU'RE ESCAPING FROM AFTER YOU GOT PREGNANT!
-    //  this.target = null;
     this.whenDidIGetPregnant = this.FRAMENUM;
     this.state = 8;
   }
@@ -649,7 +658,7 @@ class Animal {
       this.hunger--;
       this.health += this.genes.healthRecoveryWhenEating;
       //this.health++;
-      //this.target = null;
+
       return true;
     }
     return false;
@@ -676,10 +685,6 @@ class Animal {
     if (this.pos.x < 0) this.pos.x = width * RESOLUTION;
     if (this.pos.y > height * RESOLUTION) this.pos.y = 0;
     if (this.pos.y < 0) this.pos.y = height * RESOLUTION;
-
-    //    if(this.target.pos)
-
-    // this.target = getCenterCell();
   }
 
   getCloseAnimals() {
@@ -788,7 +793,9 @@ class Animal {
     ctx.lineWidth = 3;
     this.strokeColor =
       this.state == 6
-        ? "white" // eating white
+        ? "yellow" // eating
+        : this.state == 8
+        ? "white" //escaping from fuck buddy
         : this.state == 0
         ? "#2222ff" //idle blue
         : this.state == 1
@@ -815,7 +822,7 @@ class Animal {
       this.drawDirectionLine();
 
       //TARGET LINE
-      if (this.target && (this.state == 4 || this.state == 1)) {
+      if (this.target) {
         this.drawTargetLine();
       }
 
