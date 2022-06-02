@@ -13,15 +13,19 @@ var animals = [];
 var cellWidth = 30;
 var USE_ANIMAL_LIMIT = true;
 var MAX_ANIMALS_PER_CELL = 5;
-var numberOfAnimals = 20;
-var animalsLimit = 1000;
-var PERCENTAGE_OF_ROCK_FLOOR = 0.8;
-var MAX_FOOD_OF_CELLS = 400;
-var CELLCLOCK_TO_REPRODUCE = 200;
+var numberOfAnimals = 400;
+var animalsLimit = 800;
+var PERCENTAGE_OF_ROCK_FLOOR = 0.95;
+var MAX_FOOD_OF_CELLS = 1000;
+var MAX_POSSIBLE_SIZE_FOR_ANIMALS = 25;
+var CELLCLOCK_TO_REPRODUCE = 10;
+var COEF_FERTILIZATION_OF_DEAD_ANIMALS = 0.005;
 var YEAR = 1;
 var MIN_DISTANCE_FACTOR_TO_INTERACT = 2;
+var FACTOR_HOW_MUCH_FOOD_ANIMALS_EAT_RELATIVE_TO_SIZE = 1;
+var MAX_MUTATION_FACTOR = 0.4;
 var RESOLUTION = 1;
-var SAVE_LOG_OF_ANIMALS = true;
+var SAVE_LOG_OF_ANIMALS = false;
 //////
 const pausebutton = () => {
   console.log("pause");
@@ -63,12 +67,13 @@ const getMaxVal = (val, isItAGene) => {
 
 const getAvgVal = (val, isItAGene) => {
   let sum = 0;
-  for (let i = 0; i < animals.length; i++) {
-    let a = animals[i];
+  let filteredAnimals = animals.filter((k) => !k.dead);
+  for (let i = 0; i < filteredAnimals.length; i++) {
+    let a = filteredAnimals[i];
     if (!isItAGene) sum += a[val];
     else sum += a.genes[val];
   }
-  return sum / animals.length;
+  return Number((sum / filteredAnimals.length).toFixed(4));
 };
 
 const getMaxGeneration = () => {
@@ -77,6 +82,15 @@ const getMaxGeneration = () => {
     if (a.generation > max) max = a.generation;
   }
   return max;
+};
+
+const getAvgAgeOfDeath = () => {
+  let count = 0;
+  let deads = animals.filter((k) => k.dead);
+  for (let a of deads) {
+    count += a.age;
+  }
+  return count / deads.length;
 };
 
 const getTotalNumberOfAnimalsInCells = () => {

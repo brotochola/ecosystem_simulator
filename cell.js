@@ -7,6 +7,10 @@ class Cell {
     // this.container = elem;
     this.animalsHere = [];
 
+    this.genes = {
+      foodIncrease: 30,
+    };
+
     // this.elem = document.createElement("cell");
     // this.elem.style.width = cellWidth + "px";
     // this.elem.style.height = cellWidth + "px";
@@ -24,7 +28,7 @@ class Cell {
     //   // }
     // };
 
-    this.typesOfSoil = ["grass", "dirt"];
+    this.typesOfSoil = ["grass", "dirt", "grass2"];
 
     this.type = Math.floor(Math.random() * this.typesOfSoil.length);
 
@@ -99,29 +103,35 @@ class Cell {
   //   this.elem.style.backgroundColor = col;
   // }
 
-  tick(FRAMENUM) {
-    if (this.type == 1) return;
-    //EVERY 10 FRAMES THEY GET 1 MORE FOOD, WHEN THEY GET TO THE LIMIT THEY GROW OUTWARDS
-    if (this.food <= 0) this.type = 1;
+  grow() {
     if (Math.floor(Math.random() * CELLCLOCK_TO_REPRODUCE) == 0) {
-      this.food++;
+      this.food += this.genes.foodIncrease;
       if (this.food >= this.maxFood * 0.9) {
-        this.food = this.maxFood;
         let neighs = this.getNeighbours();
         //console.log(neighs);
         for (let n of neighs) {
           if (n.type == 1) {
             //IF THE CELL IS ROCK, CONVERT IT
-            n.type = 0;
-            if (!n.MaxFood) n.maxFood = Math.random() * MAX_FOOD_OF_CELLS;
+            n.type = this.type;
+            if (!n.maxFood) n.maxFood = Math.random() * MAX_FOOD_OF_CELLS;
           }
-          if (n.type == 0) {
-            n.food++;
+          if (n.type == this.type) {
+            this.food += this.genes.foodIncrease;
           }
         }
       }
     }
+  }
+
+  tick(FRAMENUM) {
+    if (this.type == 1) return;
+    //EVERY 10 FRAMES THEY GET 1 MORE FOOD, WHEN THEY GET TO THE LIMIT THEY GROW OUTWARDS
+    if (this.food <= 0) this.type = 1;
+
+    this.grow();
+
     if (this.food < 0) this.food = 0;
+    if (this.food > this.maxFood) this.food = this.maxFood;
 
     this.checkCorpsesHere();
   }
@@ -129,8 +139,9 @@ class Cell {
   checkCorpsesHere() {
     let dead = this.animalsHere.filter((k) => k.dead);
     for (let animal of dead) {
-      this.food += animal.decomposition * 0.01;
-      if (this.food > this.maxFood) this.maxFood = this.food;
+      this.food +=
+        animal.decomposition * animal.size * COEF_FERTILIZATION_OF_DEAD_ANIMALS;
+      if (this.food > this.maxFood * 0.1 && this.type == 1) this.type = 0;
     }
   }
 
@@ -140,7 +151,15 @@ class Cell {
     if (this.type == 0) {
       return "rgb(0, " + (this.coefOpacity * 200 + 50).toFixed(0) + ", 0)";
     } else if (this.type == 2) {
-      return "rgb(" + (this.coefOpacity * 200 + 50).toFixed(0) + ", 0, 0)";
+      return (
+        "rgb(" +
+        (this.coefOpacity * 200 + 50).toFixed(0) +
+        ", " +
+        (this.coefOpacity * 155 + 100).toFixed(0) +
+        ", " +
+        (this.coefOpacity * 50 + 50).toFixed(0) +
+        ")"
+      );
     }
   }
 

@@ -56,19 +56,20 @@ class Animal {
       compatibilityTreshhold: 100, //if 1 they can breed with anyone
       likability: Math.random(),
       likabilityTreshold: Math.random() * 0.5,
-      lifeExpectancy: 65 * YEAR,
+      lifeExpectancy: 50 * YEAR,
       healthRecoveryWhenEating: Math.random() * 0.5,
       hungerLimit: 10,
-      hungerIncrease: 0.1,
+      hungerIncrease: 0.01,
       healthDecreaseByHunger: 0.1,
-      healthDecreaseByAge: 1,
+      healthDecreaseByAge: 8,
       pregnancyDuration: 10 * YEAR,
       maxChildrenWhenPregnant: Math.floor(Math.random() * 6) + 1,
       chancesToGetPregnant: Math.random(),
-      minAgeToGetPregnant: 10 * YEAR,
+      minAgeToGetPregnant: 12 * YEAR,
       clockEvery: 10,
-      maxMutationWhenBreeding: Math.random() * 0.6 - 0.3,
-      maxSize: RESOLUTION * (Math.random() * 10 + 5),
+      maxMutationWhenBreeding:
+        Math.random() * (MAX_MUTATION_FACTOR / 2) - MAX_MUTATION_FACTOR,
+      maxSize: RESOLUTION * (Math.random() * 20 + 5),
       maxHealth: 100,
       partOfPregnancyThatEscapes: Math.random() * 0.2,
       r: Math.floor(Math.random() * 255),
@@ -76,8 +77,12 @@ class Animal {
       b: Math.floor(Math.random() * 255),
     };
 
+    this.myTypeOfFood = this.getMyTypeOfFood();
     if (this.genes.clockEvery < 1) this.genes.clockEvery = 1;
     if (this.genes.sightLimit < 1) this.genes.sightLimit = 1;
+    if (this.maxSize > 30) this.maxSize = MAX_POSSIBLE_SIZE_FOR_ANIMALS;
+    if (this.hungerIncrease < 0.001) this.hungerIncrease = 0.001;
+
     this.defineSize();
     //STARTING VALUES
     this.pregnant = false;
@@ -85,6 +90,7 @@ class Animal {
     this.whenDidIGetPregnant = null;
 
     this.hunger = this.getStartingHunger(parentsHunger);
+    if (this.hunger < 0) this.hunger = 0;
 
     this.startingHunger = Number(this.hunger);
 
@@ -173,18 +179,35 @@ class Animal {
   }
 
   checkDeath() {
-    if (this.health < 0) {
-      this.die();
-    }
-    if (this.age > this.genes.lifeExpectancy) {
-      this.health -= this.genes.healthDecreaseByAge;
-    }
+    if (this.dead) {
+      this.vel.x = 0;
+      this.vel.y = 0;
+      this.decomposition += Math.random() * 10;
+      //this.decomposition *= 1.1;
+      if (this.decomposition > 100) {
+        let i = this.getMyI();
+        animals.splice(i, 1);
+        removeAnimalFromAllCells(this);
+      }
+      return true;
+    } else {
+      if (this.health < 0) {
+        this.die();
+        return true;
+      }
+      if (this.age > this.genes.lifeExpectancy) {
+        this.health -=
+          (this.age - this.genes.lifeExpectancy) *
+          this.genes.healthDecreaseByAge;
+      }
 
-    //if hungry, it hurts
+      //if hungry, it hurts
 
-    if (this.hunger >= this.genes.hungerLimit) {
-      this.health -= this.genes.healthDecreaseByHunger;
-      this.hunger = this.genes.hungerLimit;
+      if (this.hunger >= this.genes.hungerLimit) {
+        this.health -= this.genes.healthDecreaseByHunger;
+        this.hunger = this.genes.hungerLimit;
+      }
+      return false;
     }
   }
 
@@ -219,10 +242,18 @@ class Animal {
     return cells;
   }
 
+  getMyTypeOfFood() {
+    //SEE cell.type
+    let what = this.genes.b > this.genes.r;
+    if (what) return 0;
+    else return 2;
+  }
+
   lookForAFood() {
     let mycell = this.getCell();
     if (!mycell) return;
     this.closeCells = this.getCloseCells();
+    //CHECK HOW MANY ANIMALS ARE THERE RIGHT NOW
     let filteredCells = this.closeCells.filter(
       (k) => k.animalsHere.length < MAX_ANIMALS_PER_CELL
     );
@@ -230,7 +261,7 @@ class Animal {
     for (let cell of filteredCells) {
       if ("food" in cell) {
         if (cell.food > 0) {
-          if (this.genes.diet > 0) {
+          if (this.myTypeOfFood == cell.type) {
             this.target = cell;
             return cell;
           }
@@ -407,6 +438,7 @@ class Animal {
     } else if (this.state == 1) {
       //IF IT'S HUNGRY
       //AND CAN'T EAT FROM THIS CELL
+      if (this.hunger < 1) this.goIdle();
       if (!this.eatFromCell()) {
         if (this.amIHungry()) this.lookForAFood(); //WILL LOOK FOR FOOD
       } else {
@@ -453,39 +485,41 @@ class Animal {
       }
     }
   }
-  amIDecomposed() {
-    if (this.dead) {
-      this.vel.x = 0;
-      this.vel.y = 0;
-      this.decomposition += 2;
-      //this.decomposition *= 1.1;
-      if (this.decomposition > 100) {
-        let i = this.getMyI();
-        animals.splice(i, 1);
-        removeAnimalFromAllCells(this);
-      }
-    }
-  }
 
+  // checkIfTargetIsTooRequested() {
+  //   //REMOVE CELLS WHERE TOO MANY ANIMALS ARE AIMING TO:
+  //   this.closeAnimals = this.getCloseAnimals();
+
+  //   let targets = this.closeAnimals.map((a) => a.target).filter((k) => k);
+  //   this.numberOfCloseAnimalsWithMySameTarget = targets.filter(
+  //     (k) => k == this.target
+  //   ).length;
+
+  //   if (this.numberOfCloseAnimalsWithMySameTarget > MAX_ANIMALS_PER_CELL) {
+  //     this.goIdle();
+  //   }
+  // }
+  sumHunger() {
+    //THE HUNGER ADDS REALTIVE TO THE SIZE AND MOVEMENT
+    let howMuch =
+      this.genes.hungerIncrease *
+      this.size *
+      (Math.abs(this.vel.x) + Math.abs(this.vel.y));
+    if (!isNaN(howMuch)) this.hunger += howMuch;
+  }
   tick(FRAMENUM) {
     this.FRAMENUM = FRAMENUM;
     this.prevPregnancyValue = this.pregnant;
+    this.numberOfCloseAnimalsWithMySameTarget = null;
     this.closeCells = [];
 
     //age, in days/frames
-    this.age++;
-
-    if (this.dead) {
-      this.amIDecomposed();
-      return;
-    }
+    if (!this.dead) this.age++;
 
     // let increase =
     //   this.genes.hungerIncrease * (this.genes.lifeExpectancy / this.age);
     // if (increase > 1) increase = 1;
-    this.hunger += this.genes.hungerIncrease;
-
-    this.checkDeath();
+    if (this.checkDeath()) return;
 
     this.setLimits();
 
@@ -500,6 +534,7 @@ class Animal {
 
     // if (this.FRAMENUM % clockEvery == 0) {
     this.checkIfTheTargetIsTooFar();
+    //   this.checkIfTargetIsTooRequested();
     //}
 
     //limit the speed
@@ -509,6 +544,8 @@ class Animal {
     this.vel.limit(this.genes.maxSpeed);
 
     this.pos.add(this.vel);
+
+    this.sumHunger();
 
     if (this.ImAtCell != this.getCell()) {
       if (this.ImAtCell) this.ImAtCell.removeMe(this);
@@ -594,11 +631,10 @@ class Animal {
 
   defineSize() {
     //it's size
-    this.size =
-      (this.age / this.genes.lifeExpectancy) * this.genes.maxSize +
-      this.genes.maxSize / 2;
+    this.size = (this.age / this.genes.lifeExpectancy) * this.genes.maxSize;
+
     if (this.size > this.genes.maxSize) this.size = this.genes.maxSize;
-    if (this.size < 5) this.size = 5;
+    if (this.size < 3) this.size = 3;
   }
 
   getMyI() {
@@ -653,8 +689,9 @@ class Animal {
   eatFromCell() {
     let mycell = this.getCell();
     if (!mycell) return;
-    if (mycell.food > 0) {
-      mycell.food--;
+    if (mycell.food > 0 && mycell.type == this.myTypeOfFood) {
+      mycell.food -=
+        this.size * FACTOR_HOW_MUCH_FOOD_ANIMALS_EAT_RELATIVE_TO_SIZE;
       this.hunger--;
       this.health += this.genes.healthRecoveryWhenEating;
       //this.health++;
@@ -791,20 +828,7 @@ class Animal {
 
     ctx.beginPath();
     ctx.lineWidth = 3;
-    this.strokeColor =
-      this.state == 6
-        ? "yellow" // eating
-        : this.state == 8
-        ? "white" //escaping from fuck buddy
-        : this.state == 0
-        ? "#2222ff" //idle blue
-        : this.state == 1
-        ? "#00ff00" //hungry green
-        : this.state == 4
-        ? "#ff0000" //horny red
-        : this.dead
-        ? "#000000" //dead black
-        : null;
+    this.strokeColor = this.getStrokeColor();
 
     ctx.arc(this.pos.x, this.pos.y, this.size / 2, 0, 2 * Math.PI);
 
@@ -835,6 +859,27 @@ class Animal {
     if (SAVE_LOG_OF_ANIMALS) this.saveLog();
   }
 
+  getStrokeColor() {
+    let c =
+      this.state == 6
+        ? "yellow" // eating
+        : this.state == 8
+        ? "white" //escaping from fuck buddy
+        : this.state == 0
+        ? "#2222ff" //idle blue
+        : this.state == 1
+        ? this.myTypeOfFood == 0
+          ? "#00ff00"
+          : "##faff64" //hungry green
+        : this.state == 4
+        ? "#ff0000" //horny red
+        : this.dead
+        ? "#000000" //dead black
+        : null;
+
+    return c;
+  }
+
   drawDirectionLine() {
     ctx.beginPath();
 
@@ -850,6 +895,7 @@ class Animal {
     ctx.beginPath();
     ctx.moveTo(this.pos.x, this.pos.y);
     ctx.lineTo(this.target.pos.x, this.target.pos.y);
+
     ctx.strokeStyle = this.strokeColor;
 
     ctx.stroke();
