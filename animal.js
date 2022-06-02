@@ -59,7 +59,7 @@ class Animal {
       lifeExpectancy: 50 * YEAR,
       healthRecoveryWhenEating: Math.random() * 0.5,
       hungerLimit: 10,
-      hungerIncrease: 0.01,
+      hungerIncrease: 0.012,
       pregnancyDuration: 10 * YEAR,
       maxChildrenWhenPregnant: Math.floor(Math.random() * 6) + 1,
       chancesToGetPregnant: Math.random(),
@@ -80,6 +80,8 @@ class Animal {
     if (this.genes.sightLimit < 1) this.genes.sightLimit = 1;
     if (this.maxSize > 30) this.maxSize = MAX_POSSIBLE_SIZE_FOR_ANIMALS;
     if (this.hungerIncrease < 0.001) this.hungerIncrease = 0.001;
+    if (this.genes.lifeExpectancy > MAX_LIFE_EXPECTANCY)
+      this.genes.lifeExpectancy = MAX_LIFE_EXPECTANCY;
 
     this.defineSize();
     //STARTING VALUES
@@ -201,9 +203,12 @@ class Animal {
       //if hungry, it hurts
 
       if (this.hunger >= this.genes.hungerLimit) {
-        this.health -=
+        let factor =
           (this.hunger - this.genes.hungerLimit) *
           COEF_HEALTH_DECREASE_BY_HUNGER;
+        //WHEN YOU'RE HUNGRY YOU PASS IT TO YOUR KIDS
+        this.genes.lifeExpectancy -= factor;
+        this.health -= factor;
       }
       return false;
     }
@@ -436,7 +441,11 @@ class Animal {
     } else if (this.state == 1) {
       //IF IT'S HUNGRY
       //AND CAN'T EAT FROM THIS CELL
-      if (this.hunger < 1) this.goIdle();
+      if (
+        this.hunger <
+        COEF_PERCENTAGE_OF_HUNGER_TO_BE_CONSIDERED_FULL * this.genes.hungerLimit
+      )
+        this.goIdle();
       if (!this.eatFromCell()) {
         if (this.amIHungry()) this.lookForAFood(); //WILL LOOK FOR FOOD
       } else {
@@ -454,7 +463,10 @@ class Animal {
         else this.goIdle();
       }
       //WILL EAT UNTIL HE'S OK
-      if (this.hunger <= 1) {
+      if (
+        this.hunger <=
+        COEF_PERCENTAGE_OF_HUNGER_TO_BE_CONSIDERED_FULL * this.genes.hungerLimit
+      ) {
         this.goIdle();
       }
     } else if (this.state == 8) {
@@ -841,11 +853,11 @@ class Animal {
 
       //TARGET LINE
       if (this.target) {
-        this.drawTargetLine();
+        if (RENDER_TARGET_LINES) this.drawTargetLine();
       }
 
       if (this.pregnant && !this.prevPregnancyValue)
-        this.drawPregnancyHappening();
+        if (RENDER_PREGNANCY_BOOM) this.drawPregnancyHappening();
     }
 
     ctx.restore();

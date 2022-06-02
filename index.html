@@ -81,6 +81,11 @@
 
     <control style="display:none">
         <p> render? <input type="checkbox" id="render" checked="checked"></p>
+        <p> targets? <input type="checkbox" id="targetsCheckbox" checked="checked"
+                onchange="(e)=>{handleTargetsCheckbox(e)}"></p>
+
+        <p> pregnancy indicators? <input type="checkbox" id="pregnancyCheckbox" checked="checked"></p>
+
         <p>every: <input id="everyHowManyFrames" value="20" /></p>
         <div id="contentOfControl"></div>
 

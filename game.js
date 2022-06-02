@@ -7,27 +7,34 @@ var canvas;
 var width = window.innerWidth * 0.95;
 var height = window.innerHeight * 0.95;
 var animals = [];
+var targetsCheckbox;
 /////////////////////////
 ////control panel ///////
 ///////////////////////
-var cellWidth = 30;
+var cellWidth = 20;
 var USE_ANIMAL_LIMIT = true;
 var MAX_ANIMALS_PER_CELL = 5;
 var numberOfAnimals = 500;
-var animalsLimit = 800;
+var animalsLimit = 1000;
 var PERCENTAGE_OF_ROCK_FLOOR = 0.6;
 var MAX_FOOD_OF_CELLS = 800;
 var MAX_POSSIBLE_SIZE_FOR_ANIMALS = 25;
-var CELLCLOCK_TO_REPRODUCE = 12;
+var CELLCLOCK_TO_REPRODUCE = 15;
 var COEF_FERTILIZATION_OF_DEAD_ANIMALS = 0.005;
 var COEF_HEALTH_DECREASE_BY_HUNGER = 0.01;
-var COEF_HEALTH_DECREASE_BY_AGE = 8;
+var COEF_HEALTH_DECREASE_BY_AGE = 2;
+var MAX_LIFE_EXPECTANCY = 60;
+var COEF_PERCENTAGE_OF_HUNGER_TO_BE_CONSIDERED_FULL = 0.2;
+
+var RENDER_TARGET_LINES = false;
+var RENDER_PREGNANCY_BOOM = false;
+
 var YEAR = 1;
 var MIN_DISTANCE_FACTOR_TO_INTERACT = 2;
 var FACTOR_HOW_MUCH_FOOD_ANIMALS_EAT_RELATIVE_TO_SIZE = 1;
 var MAX_MUTATION_FACTOR = 0.4;
 var RESOLUTION = 1;
-var SAVE_LOG_OF_ANIMALS = false;
+var SAVE_LOG_OF_ANIMALS = true;
 //////
 const pausebutton = () => {
   console.log("pause");
@@ -140,6 +147,10 @@ const gameLoop = () => {
       if (document.querySelector("canvas").style.display != "none")
         document.querySelector("canvas").style.display = "none";
     }
+
+    RENDER_TARGET_LINES = targetsCheckbox.checked;
+
+    RENDER_PREGNANCY_BOOM = pregnancyCheckbox.checked;
   }
 
   window.durationOfFrame = Date.now() - (window.lastFrame || 0);
@@ -287,6 +298,7 @@ const init = () => {
 
   ctx = canvas.getContext("2d");
   renderCheckBox = document.querySelector("#render");
+  targetsCheckbox = document.querySelector("#targetsCheckbox");
   gameLoop();
 };
 
