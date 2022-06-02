@@ -35,7 +35,7 @@ class Cell {
     if (Math.random() > 1 - PERCENTAGE_OF_ROCK_FLOOR) this.type = 1;
 
     if (this.type == 1) this.maxFood = 0;
-    else this.maxFood = Math.floor(Math.random() * MAX_FOOD_OF_CELLS);
+    else this.maxFood = this.getMaxFood();
 
     this.food = Number(this.maxFood);
     /////definition of stuff:
@@ -103,6 +103,12 @@ class Cell {
   //   this.elem.style.backgroundColor = col;
   // }
 
+  getMaxFood() {
+    return Math.floor(
+      Math.random() * MAX_FOOD_OF_CELLS * 0.1 + MAX_ANIMALS_PER_CELL * 0.9
+    );
+  }
+
   grow() {
     if (Math.floor(Math.random() * CELLCLOCK_TO_REPRODUCE) == 0) {
       this.food += this.genes.foodIncrease;
@@ -113,7 +119,7 @@ class Cell {
           if (n.type == 1) {
             //IF THE CELL IS ROCK, CONVERT IT
             n.type = this.type;
-            if (!n.maxFood) n.maxFood = Math.random() * MAX_FOOD_OF_CELLS;
+            if (!n.maxFood) n.maxFood = this.getMaxFood();
           }
           if (n.type == this.type) {
             this.food += this.genes.foodIncrease;
@@ -141,13 +147,14 @@ class Cell {
     for (let animal of dead) {
       this.food +=
         animal.decomposition * animal.size * COEF_FERTILIZATION_OF_DEAD_ANIMALS;
-      if (this.food > this.maxFood * 0.1 && this.type == 1) this.type = 0;
+      if (this.food > this.maxFood * 0.1 && this.type == 1)
+        this.type = animal.myTypeOfFood;
     }
   }
 
   getColor() {
     if (this.type == 1) return "gray";
-    this.coefOpacity = this.food / this.maxFood;
+    this.coefOpacity = this.food / MAX_FOOD_OF_CELLS;
     if (this.type == 0) {
       return "rgb(0, " + (this.coefOpacity * 200 + 50).toFixed(0) + ", 0)";
     } else if (this.type == 2) {
@@ -155,9 +162,9 @@ class Cell {
         "rgb(" +
         (this.coefOpacity * 200 + 50).toFixed(0) +
         ", " +
-        (this.coefOpacity * 155 + 100).toFixed(0) +
+        (this.coefOpacity * 20).toFixed(0) +
         ", " +
-        (this.coefOpacity * 50 + 50).toFixed(0) +
+        (this.coefOpacity * 150 - 50).toFixed(0) +
         ")"
       );
     }

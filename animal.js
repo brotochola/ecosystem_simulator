@@ -60,8 +60,6 @@ class Animal {
       healthRecoveryWhenEating: Math.random() * 0.5,
       hungerLimit: 10,
       hungerIncrease: 0.01,
-      healthDecreaseByHunger: 0.1,
-      healthDecreaseByAge: 8,
       pregnancyDuration: 10 * YEAR,
       maxChildrenWhenPregnant: Math.floor(Math.random() * 6) + 1,
       chancesToGetPregnant: Math.random(),
@@ -197,15 +195,15 @@ class Animal {
       }
       if (this.age > this.genes.lifeExpectancy) {
         this.health -=
-          (this.age - this.genes.lifeExpectancy) *
-          this.genes.healthDecreaseByAge;
+          (this.age - this.genes.lifeExpectancy) * COEF_HEALTH_DECREASE_BY_AGE;
       }
 
       //if hungry, it hurts
 
       if (this.hunger >= this.genes.hungerLimit) {
-        this.health -= this.genes.healthDecreaseByHunger;
-        this.hunger = this.genes.hungerLimit;
+        this.health -=
+          (this.hunger - this.genes.hungerLimit) *
+          COEF_HEALTH_DECREASE_BY_HUNGER;
       }
       return false;
     }
@@ -568,15 +566,11 @@ class Animal {
   }
 
   checkIfItsTooCrowdedHere() {
+    //MAKE IT HUNGRY
+    //LIKE.. I GET OUTTA HERE, I'M GONN' EAT SOMETHIN'
     if (this.howManyAnimalsInSameCell > MAX_ANIMALS_PER_CELL) {
-      this.closeCells = this.getCloseCells();
-      let closeCellsWithRoom = this.closeCells.filter(
-        (k) => k.animalsHere.length < MAX_ANIMALS_PER_CELL && k.food > 0
-      );
-      if (closeCellsWithRoom.length > 0) {
-        this.state = 1;
-        this.target = closeCellsWithRoom[0];
-      }
+      this.state = 1;
+      this.lookForAFood();
     }
   }
 
@@ -869,8 +863,8 @@ class Animal {
         ? "#2222ff" //idle blue
         : this.state == 1
         ? this.myTypeOfFood == 0
-          ? "#00ff00"
-          : "##faff64" //hungry green
+          ? "#00ff00" //hungry green
+          : "#faff64" //yellow
         : this.state == 4
         ? "#ff0000" //horny red
         : this.dead
