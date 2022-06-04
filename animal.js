@@ -48,7 +48,7 @@ class Animal {
     this.cellsClose = [];
     //GENES
     this.genes = genes || {
-      sightLimit: 10,
+      sightLimit: 8,
       fear: Math.random(),
       diet: Math.random(), //0 is carnivore, 1herbi, 0.5 omni
       maxSpeed: 1 * Math.random() + 1,
@@ -60,13 +60,12 @@ class Animal {
       healthRecoveryWhenEating: Math.random() * 0.5,
       hungerLimit: 10,
       hungerIncrease: 0.012,
-      pregnancyDuration: 10 * YEAR,
+      pregnancyDuration: 6 * YEAR,
       maxChildrenWhenPregnant: Math.floor(Math.random() * 6) + 1,
       chancesToGetPregnant: Math.random(),
       minAgeToGetPregnant: 12 * YEAR,
       clockEvery: 10,
-      maxMutationWhenBreeding:
-        Math.random() * (MAX_MUTATION_FACTOR / 2) - MAX_MUTATION_FACTOR,
+
       maxSize: RESOLUTION * (Math.random() * 20 + 5),
       maxHealth: 100,
       partOfPregnancyThatEscapes: Math.random() * 0.2,
@@ -321,9 +320,7 @@ class Animal {
       let mygen = this.genes[k];
       let theirgen = externalGenes[k];
       let mutationCoef =
-        this.genes.maxMutationWhenBreeding * Math.random() +
-        (1 - this.genes.maxMutationWhenBreeding / 2);
-
+        Math.random() * MAX_MUTATION_FACTOR - MAX_MUTATION_FACTOR * 0.5 + 1;
       if (Math.random() > 0.5) result[k] = mygen * mutationCoef;
       else result[k] = theirgen * mutationCoef;
     }

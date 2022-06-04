@@ -7,15 +7,16 @@ var canvas;
 var width = window.innerWidth * 0.95;
 var height = window.innerHeight * 0.95;
 var animals = [];
-var targetsCheckbox;
+let targetsCheckbox;
+let pregnancyCheckbox;
 /////////////////////////
 ////control panel ///////
 ///////////////////////
-var cellWidth = 20;
+var cellWidth = 22;
 var USE_ANIMAL_LIMIT = true;
 var MAX_ANIMALS_PER_CELL = 5;
-var numberOfAnimals = 500;
-var animalsLimit = 1000;
+var numberOfAnimals = 600;
+var animalsLimit = 800;
 var PERCENTAGE_OF_ROCK_FLOOR = 0.6;
 var MAX_FOOD_OF_CELLS = 800;
 var MAX_POSSIBLE_SIZE_FOR_ANIMALS = 25;
@@ -32,7 +33,7 @@ var RENDER_PREGNANCY_BOOM = false;
 var YEAR = 1;
 var MIN_DISTANCE_FACTOR_TO_INTERACT = 2;
 var FACTOR_HOW_MUCH_FOOD_ANIMALS_EAT_RELATIVE_TO_SIZE = 1;
-var MAX_MUTATION_FACTOR = 0.4;
+var MAX_MUTATION_FACTOR = 0.05;
 var RESOLUTION = 1;
 var SAVE_LOG_OF_ANIMALS = true;
 //////
@@ -148,9 +149,9 @@ const gameLoop = () => {
         document.querySelector("canvas").style.display = "none";
     }
 
-    RENDER_TARGET_LINES = targetsCheckbox.checked;
+    if (targetsCheckbox) RENDER_TARGET_LINES = targetsCheckbox.checked;
 
-    RENDER_PREGNANCY_BOOM = pregnancyCheckbox.checked;
+    if (pregnancyCheckbox) RENDER_PREGNANCY_BOOM = pregnancyCheckbox.checked;
   }
 
   window.durationOfFrame = Date.now() - (window.lastFrame || 0);
