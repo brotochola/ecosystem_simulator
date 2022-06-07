@@ -1,4 +1,5 @@
 var FRAMENUM = 0;
+var renderStrokes;
 var renderCheckBox;
 var grid = [];
 var ctx;
@@ -9,6 +10,9 @@ var height = window.innerHeight * 0.95;
 var animals = [];
 let targetsCheckbox;
 let pregnancyCheckbox;
+let statsCanvas;
+let stats = [];
+let updateDataEveryFrames;
 /////////////////////////
 ////control panel ///////
 ///////////////////////
@@ -26,7 +30,7 @@ var COEF_HEALTH_DECREASE_BY_HUNGER = 0.01;
 var COEF_HEALTH_DECREASE_BY_AGE = 2;
 var MAX_LIFE_EXPECTANCY = 60;
 var COEF_PERCENTAGE_OF_HUNGER_TO_BE_CONSIDERED_FULL = 0.2;
-
+var COMPATIBILITY_TRESHOLD = 0.2;
 var RENDER_TARGET_LINES = false;
 var RENDER_PREGNANCY_BOOM = false;
 
@@ -40,6 +44,8 @@ var SAVE_LOG_OF_ANIMALS = true;
 const pausebutton = () => {
   console.log("pause");
   pause = !pause;
+
+  if (!pause) gameLoop();
 };
 const showLifeLogOfAnimal0 = () => {
   console.table(JSON.parse(localStorage.animal0));
@@ -123,6 +129,10 @@ const removeAnimalFromAllCells = (animal) => {
 
 const gameLoop = () => {
   if (!pause) {
+    if (animals.length == 0) {
+      alert("all animals died");
+      return;
+    }
     FRAMENUM++;
     ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
@@ -135,8 +145,8 @@ const gameLoop = () => {
     for (animal of animals) animal.tick(FRAMENUM);
 
     if (renderCheckBox.checked) {
-      if (document.querySelector("canvas").style.display != "block")
-        document.querySelector("canvas").style.display = "block";
+      if (document.querySelector("#renderCanvas").style.display != "block")
+        document.querySelector("#renderCanvas").style.display = "block";
 
       for (let i = 0; i < height / cellWidth; i++) {
         for (let j = 0; j < width / cellWidth; j++) {
@@ -145,21 +155,24 @@ const gameLoop = () => {
       }
       for (animal of animals) animal.render(FRAMENUM);
     } else {
-      if (document.querySelector("canvas").style.display != "none")
-        document.querySelector("canvas").style.display = "none";
+      if (document.querySelector("#renderCanvas").style.display != "none")
+        document.querySelector("#renderCanvas").style.display = "none";
     }
 
     if (targetsCheckbox) RENDER_TARGET_LINES = targetsCheckbox.checked;
 
     if (pregnancyCheckbox) RENDER_PREGNANCY_BOOM = pregnancyCheckbox.checked;
+
+    window.durationOfFrame = Date.now() - (window.lastFrame || 0);
+    window.lastFrame = Date.now();
+    window.frameRate = 1000 / durationOfFrame;
+
+    getStatsData();
+
+    showDataInControlPanel();
+
+    requestAnimationFrame(gameLoop);
   }
-
-  window.durationOfFrame = Date.now() - (window.lastFrame || 0);
-  window.lastFrame = Date.now();
-  window.frameRate = 1000 / durationOfFrame;
-  showDataInControlPanel();
-
-  requestAnimationFrame(gameLoop);
 };
 const generateID = () => {
   let vowels = "aeiou";
@@ -200,7 +213,7 @@ const showDataInControlPanel = () => {
   ) {
     let cont = document.querySelector("#contentOfControl");
     let content = "<p>ANIMALS:" + animals.length + "</p>";
-    content += "<p>FPS: " + frameRate + "<p>";
+    content += "<p>FPS: " + frameRate.toFixed(2) + "<p>";
     content += "<p>generation: " + getMaxGeneration() + "<p>";
 
     content += "<p>total food: " + getAllAvailableFood() + "<p>";
@@ -214,6 +227,109 @@ const showDataInControlPanel = () => {
       (getAvgVal("hunger") / getAvgVal("hungerLimit", true)).toFixed(2) +
       "</p>";
     cont.innerHTML = content;
+    renderStatsData();
+  }
+};
+
+const getStatsData = () => {
+  if (animals.length == 0) return;
+  updateDataEveryFrames =
+    (document.querySelector("#everyHowManyFrames") || {}).value || 1;
+  let an = animals[0];
+  let ret = {};
+  ret.numberOfAnimals = animals.length;
+  if ("genes" in an) {
+    let genes = Object.keys(an.genes);
+    for (let gen of genes) {
+      ret[gen] = getAvgVal(gen, true);
+    }
+  }
+
+  stats.push(ret);
+  if (stats.length > statsCanvas.width) stats.splice(0, 1);
+};
+
+const getLineColorForGenes = () => {
+  let colors = {
+    sightLimit: "#447755",
+    diet: "#00ffaa",
+    maxSpeed: "#aabb06",
+    likability: "pink",
+    likabilityTreshold: "#1111aa",
+    lifeExpectancy: "yellow",
+    healthRecoveryWhenEating: "violet",
+    hungerLimit: "#7eef0a",
+    hungerIncrease: "#9884aa",
+    pregnancyDuration: "white",
+    maxChildrenWhenPregnant: "#aa00ee",
+    chancesToGetPregnant: "#07aa99",
+    minAgeToGetPregnant: "#aa00e1",
+    clockEvery: "#9a3388",
+    maxSize: "#abcd51",
+    maxHealth: "#BCBC01",
+    partOfPregnancyThatEscapes: "#0684aa",
+    r: "#ff0000",
+    g: "#00ff00",
+    b: "#0000ff",
+  };
+
+  return colors;
+};
+
+const renderStatsData = () => {
+  if (stats.length < 2) return;
+
+  let ct = statsCanvas.getContext("2d");
+  let colors = getLineColorForGenes();
+  let colorKeys = Object.keys(colors);
+  let colorNamesContent = "";
+  colorKeys.map((k) => {
+    colorNamesContent +=
+      "<p style='color:" +
+      colors[k] +
+      "'>" +
+      k +
+      " " +
+      ((stats[stats.length - 1] || [])[k] || -1).toFixed(2) +
+      "</p>";
+  });
+
+  document.querySelector("#colorNames").innerHTML = colorNamesContent;
+
+  ct.fillStyle = "#000000";
+  ct.save();
+  ct.beginPath();
+  ct.rect(0, 0, statsCanvas.width, statsCanvas.height);
+  ct.fill();
+  ct.closePath();
+
+  for (let i = 1; i < stats.length; i++) {
+    let st = stats[i];
+
+    let prev_st = stats[i - 1];
+    let genes = Object.keys(st);
+
+    ct.lineWidth = 2;
+
+    for (let g of genes) {
+      ct.beginPath();
+      let geneColor = colors[g];
+      if (!geneColor) continue;
+      ct.strokeStyle = geneColor;
+      ct.moveTo(
+        i,
+        statsCanvas.height - (st[g] < 2 ? st[g] * statsCanvas.height : st[g])
+      );
+      ct.lineTo(
+        i - 1,
+        statsCanvas.height -
+          (prev_st[g] < 2 ? prev_st[g] * statsCanvas.height : st[g])
+      );
+
+      ct.stroke();
+
+      ct.closePath();
+    }
   }
 };
 
@@ -260,8 +376,8 @@ const createGrid = () => {
   return grid;
 };
 
-const createAnimals = (grid) => {
-  for (let i = 0; i < numberOfAnimals; i++) {
+const createAnimals = (grid, howMany) => {
+  for (let i = 0; i < howMany; i++) {
     animals.push(
       new Animal(
         cellWidth,
@@ -286,12 +402,13 @@ const handleClickOnCanvas = (e) => {
 const init = () => {
   localStorage.clear();
   grid = createGrid();
-  createAnimals(grid);
+  createAnimals(grid, numberOfAnimals);
 
   console.log("# grid", grid);
   console.log("# animals", animals);
 
   canvas = document.createElement("canvas");
+  canvas.id = "renderCanvas";
   canvas.onclick = (e) => handleClickOnCanvas(e);
   document.body.appendChild(canvas);
   canvas.width = width * RESOLUTION;
@@ -300,6 +417,9 @@ const init = () => {
   ctx = canvas.getContext("2d");
   renderCheckBox = document.querySelector("#render");
   targetsCheckbox = document.querySelector("#targetsCheckbox");
+  renderStrokes = document.querySelector("#renderStrokes");
+
+  statsCanvas = document.querySelector("#statsCanvas");
   gameLoop();
 };
 

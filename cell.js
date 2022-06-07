@@ -38,6 +38,7 @@ class Cell {
     else this.maxFood = this.getMaxFood();
 
     this.food = Number(this.maxFood);
+
     /////definition of stuff:
   }
   removeMe(who) {
@@ -65,6 +66,7 @@ class Cell {
   }
 
   getNeighbours() {
+    if (this.neighbours) return this.neighbours;
     let arrRet = [];
     let x = this.pos.x / this.cellWidth;
     let y = this.pos.y / this.cellWidth;
@@ -92,7 +94,10 @@ class Cell {
     try {
       arrRet.push(grid[y + 1][x + 1]);
     } catch (e) {}
-    return arrRet.filter((k) => k);
+
+    let ret = arrRet.filter((k) => k);
+    this.neighbours = ret;
+    return ret;
   }
 
   getPos() {

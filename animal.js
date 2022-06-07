@@ -5,7 +5,13 @@ class Animal {
     }
     if (this.dead) return "rgb(0,0,0," + (100 - this.decomposition) / 100 + ")";
     return (
-      "rgb(" + this.genes.r + "," + this.genes.g + "," + this.genes.b + ")"
+      "rgb(" +
+      Math.floor(this.genes.r * 255) +
+      "," +
+      Math.floor(this.genes.g * 255) +
+      "," +
+      Math.floor(this.genes.b * 255) +
+      ")"
     );
   }
 
@@ -41,6 +47,8 @@ class Animal {
       "escapingFromFuckBuddy", //8
     ];
 
+    console.log(this.id + " " + this.lastName);
+
     //CONSCIOUSNESS
     this.state = 0; //Math.floor(Math.random() * this.possibleStates.length);
     this.target = null; //this.pickARandomCell();
@@ -51,12 +59,12 @@ class Animal {
       sightLimit: 8,
       fear: Math.random(),
       diet: Math.random(), //0 is carnivore, 1herbi, 0.5 omni
-      maxSpeed: 1 * Math.random() + 1,
+      maxSpeed: 2 * Math.random() + 1,
       maxAcceleration: 1,
-      compatibilityTreshhold: 100, //if 1 they can breed with anyone
+      // compatibilityTreshhold: 0.5, //if 1 they can breed with anyone
       likability: Math.random(),
       likabilityTreshold: Math.random() * 0.5,
-      lifeExpectancy: 50 * YEAR,
+      lifeExpectancy: MAX_LIFE_EXPECTANCY,
       healthRecoveryWhenEating: Math.random() * 0.5,
       hungerLimit: 10,
       hungerIncrease: 0.012,
@@ -69,18 +77,12 @@ class Animal {
       maxSize: RESOLUTION * (Math.random() * 20 + 5),
       maxHealth: 100,
       partOfPregnancyThatEscapes: Math.random() * 0.2,
-      r: Math.floor(Math.random() * 255),
-      g: Math.floor(Math.random() * 255),
-      b: Math.floor(Math.random() * 255),
+      r: Math.random(),
+      g: Math.random(),
+      b: Math.random(),
     };
 
-    this.myTypeOfFood = this.getMyTypeOfFood();
-    if (this.genes.clockEvery < 1) this.genes.clockEvery = 1;
-    if (this.genes.sightLimit < 1) this.genes.sightLimit = 1;
-    if (this.maxSize > 30) this.maxSize = MAX_POSSIBLE_SIZE_FOR_ANIMALS;
-    if (this.hungerIncrease < 0.001) this.hungerIncrease = 0.001;
-    if (this.genes.lifeExpectancy > MAX_LIFE_EXPECTANCY)
-      this.genes.lifeExpectancy = MAX_LIFE_EXPECTANCY;
+    this.initializeValuesAccordingToGenes();
 
     this.defineSize();
     //STARTING VALUES
@@ -109,6 +111,29 @@ class Animal {
 
     //console.log("## new animal is born", this.id);
   }
+
+  initializeValuesAccordingToGenes = () => {
+    this.getMyTypeOfFood();
+    this.setIfImAScavenger();
+
+    if (this.genes.clockEvery < 1) this.genes.clockEvery = 1;
+    if (this.genes.sightLimit < 1) this.genes.sightLimit = 1;
+    if (this.maxSize > 30) this.maxSize = MAX_POSSIBLE_SIZE_FOR_ANIMALS;
+    if (this.hungerIncrease < 0.001) this.hungerIncrease = 0.001;
+    if (this.genes.lifeExpectancy > MAX_LIFE_EXPECTANCY)
+      this.genes.lifeExpectancy = MAX_LIFE_EXPECTANCY;
+    if (this.genes.diet > 1) this.genes.diet = 1;
+    else if (this.genes.diet < 0) this.genes.diet = 0;
+  };
+
+  setIfImAScavenger = () => {
+    //IT IS RARE TO BECOME A SCAVENGER
+    this.scavenger =
+      this.genes.r > this.genes.g &&
+      this.genes.r > this.genes.b &&
+      this.genes.b > this.genes.g &&
+      this.genes.diet < 0.2;
+  };
 
   getStartingHunger(parentsHunger) {
     return (parentsHunger || 0) + this.genes.hungerLimit * Math.random();
@@ -246,26 +271,53 @@ class Animal {
 
   getMyTypeOfFood() {
     //SEE cell.type
+    let ret;
     let what = this.genes.b > this.genes.r;
-    if (what) return 0;
-    else return 2;
+
+    if (what) ret = 0;
+    else ret = 2;
+    this.myTypeOfFood = ret;
+    return ret;
   }
 
   lookForAFood() {
     let mycell = this.getCell();
     if (!mycell) return;
     this.closeCells = this.getCloseCells();
-    //CHECK HOW MANY ANIMALS ARE THERE RIGHT NOW
-    let filteredCells = this.closeCells.filter(
-      (k) => k.animalsHere.length < MAX_ANIMALS_PER_CELL
-    );
+    //IF I CAN EAT DEAD MEAT
+    if (this.scavenger) {
+      //LOOK FOR DEAD ANIMALS RIGHT HERE
+      //AND ANIMALS THAT ARE NOT MY SPECIES
+      let veryCloseDeadAnimals = mycell.animalsHere.filter(
+        (k) => k.dead && !this.amICompatibleToBreedWith(k)
+      );
+      if (veryCloseDeadAnimals.length > 0) {
+        this.target = veryCloseDeadAnimals[0];
+        return;
+      } else {
+        //IF THERE ISNT ANY, LOOK A BIT FIRTHER
+        let deadCloseToMe = this.getCloseAnimals(true).filter(
+          (k) => k.dead && !this.amICompatibleToBreedWith(k)
+        );
+        if (deadCloseToMe.length > 0) {
+          let newTarget = deadCloseToMe[0];
+          this.target = newTarget;
+          return newTarget;
+        }
+      }
+    } else {
+      //CHECK HOW MANY ANIMALS ARE THERE RIGHT NOW
+      let filteredCells = this.closeCells.filter(
+        (k) => k.animalsHere.length < MAX_ANIMALS_PER_CELL
+      );
 
-    for (let cell of filteredCells) {
-      if ("food" in cell) {
-        if (cell.food > 0) {
-          if (this.myTypeOfFood == cell.type) {
-            this.target = cell;
-            return cell;
+      for (let cell of filteredCells) {
+        if ("food" in cell) {
+          if (cell.food > 0) {
+            if (this.myTypeOfFood == cell.type) {
+              this.target = cell;
+              return cell;
+            }
           }
         }
       }
@@ -337,73 +389,73 @@ class Animal {
     this.acc.add(this.separation());
   }
 
-  align() {
-    let avg = new p5.Vector();
+  // align() {
+  //   let avg = new p5.Vector();
 
-    let closeanimals = this.getCloseAnimals() || [];
+  //   let closeanimals = this.getCloseAnimals() || [];
 
-    let divideByHowMany = 0;
-    for (let anim of closeanimals) {
-      if (this.areWeTheSameSpecies(anim)) {
-        avg.add(anim.vel);
-        divideByHowMany++;
-      }
-    }
-    if (divideByHowMany > 0) {
-      avg.div(divideByHowMany);
-      avg.sub(this.vel);
-      avg.limit(this.genes.maxAcceleration);
-      return avg;
-    }
-    return new p5.Vector(0, 0);
-  }
+  //   let divideByHowMany = 0;
+  //   for (let anim of closeanimals) {
+  //     if (this.areWeTheSameSpecies(anim)) {
+  //       avg.add(anim.vel);
+  //       divideByHowMany++;
+  //     }
+  //   }
+  //   if (divideByHowMany > 0) {
+  //     avg.div(divideByHowMany);
+  //     avg.sub(this.vel);
+  //     avg.limit(this.genes.maxAcceleration);
+  //     return avg;
+  //   }
+  //   return new p5.Vector(0, 0);
+  // }
 
-  cohesion() {
-    let avg = new p5.Vector();
-    let closeanimals = this.getCloseAnimals() || [];
+  // cohesion() {
+  //   let avg = new p5.Vector();
+  //   let closeanimals = this.getCloseAnimals() || [];
 
-    let divideByHowMany = 0;
-    for (let anim of closeanimals) {
-      if (this.areWeTheSameSpecies(anim)) {
-        avg.add(anim.pos);
-        divideByHowMany++;
-      }
-    }
-    if (divideByHowMany > 0) {
-      avg.div(divideByHowMany);
-      avg.sub(this.pos);
-      avg.limit(this.genes.maxAcceleration);
+  //   let divideByHowMany = 0;
+  //   for (let anim of closeanimals) {
+  //     if (this.areWeTheSameSpecies(anim)) {
+  //       avg.add(anim.pos);
+  //       divideByHowMany++;
+  //     }
+  //   }
+  //   if (divideByHowMany > 0) {
+  //     avg.div(divideByHowMany);
+  //     avg.sub(this.pos);
+  //     avg.limit(this.genes.maxAcceleration);
 
-      //this.vel = avg;
-      return avg;
-    }
-    return new p5.Vector(0, 0);
-  }
+  //     //this.vel = avg;
+  //     return avg;
+  //   }
+  //   return new p5.Vector(0, 0);
+  // }
 
-  separation() {
-    let avg = new p5.Vector();
-    let closeanimals = this.getCloseAnimals() || [];
+  // separation() {
+  //   let avg = new p5.Vector();
+  //   let closeanimals = this.getCloseAnimals() || [];
 
-    let divideByHowMany = 0;
-    for (let anim of closeanimals) {
-      if (this.areWeTheSameSpecies(anim)) {
-        let diff = p5.Vector.sub(this.pos, anim.pos);
-        let dist = distance(this.pos, anim.pos);
+  //   let divideByHowMany = 0;
+  //   for (let anim of closeanimals) {
+  //     if (this.areWeTheSameSpecies(anim)) {
+  //       let diff = p5.Vector.sub(this.pos, anim.pos);
+  //       let dist = distance(this.pos, anim.pos);
 
-        diff.div(dist);
-        avg.add(diff);
-        divideByHowMany++;
-      }
-    }
-    if (divideByHowMany > 0) {
-      avg.div(divideByHowMany);
-      //  avg.sub(this.vel);
-      avg.limit(this.genes.maxAcceleration);
+  //       diff.div(dist);
+  //       avg.add(diff);
+  //       divideByHowMany++;
+  //     }
+  //   }
+  //   if (divideByHowMany > 0) {
+  //     avg.div(divideByHowMany);
+  //     //  avg.sub(this.vel);
+  //     avg.limit(this.genes.maxAcceleration);
 
-      return avg;
-    }
-    return new p5.Vector(0, 0);
-  }
+  //     return avg;
+  //   }
+  //   return new p5.Vector(0, 0);
+  // }
 
   accordingToStuffChangeState() {
     if (this.amIHungry()) {
@@ -515,19 +567,19 @@ class Animal {
     if (!isNaN(howMuch)) this.hunger += howMuch;
   }
   tick(FRAMENUM) {
+    if (this.checkDeath()) return;
     this.FRAMENUM = FRAMENUM;
     this.prevPregnancyValue = this.pregnant;
     this.numberOfCloseAnimalsWithMySameTarget = null;
     this.closeCells = [];
 
     //age, in days/frames
-    if (!this.dead) this.age++;
 
     // let increase =
     //   this.genes.hungerIncrease * (this.genes.lifeExpectancy / this.age);
     // if (increase > 1) increase = 1;
-    if (this.checkDeath()) return;
 
+    if (!this.dead) this.age++;
     this.setLimits();
 
     //this.flockBehaviour();
@@ -617,6 +669,7 @@ class Animal {
       age: (this.age / this.genes.lifeExpectancy).toFixed(2),
       velX: this.vel.x,
       velY: this.vel.y,
+      deco: this.decomposition,
     };
 
     if (this.target) {
@@ -692,6 +745,9 @@ class Animal {
   eatFromCell() {
     let mycell = this.getCell();
     if (!mycell) return;
+
+    //VEGGIE:
+
     if (mycell.food > 0 && mycell.type == this.myTypeOfFood) {
       mycell.food -=
         this.size * FACTOR_HOW_MUCH_FOOD_ANIMALS_EAT_RELATIVE_TO_SIZE;
@@ -700,7 +756,23 @@ class Animal {
       //this.health++;
 
       return true;
+    } else if (this.scavenger) {
+      //IF THERE'S NO VEGGIES, LOOK FOR DEAD ANIMALS IF YOU RE A SCAVENGER
+      let deadAnimalsInThisCel = mycell.animalsHere.filter(
+        (k) =>
+          k.dead && !this.amICompatibleToBreedWith(k) && k.decomposition <= 100
+      );
+
+      if (deadAnimalsInThisCel.length > 0) {
+        let myDead = deadAnimalsInThisCel[0];
+        myDead.decomposition +=
+          this.size * FACTOR_HOW_MUCH_FOOD_ANIMALS_EAT_RELATIVE_TO_SIZE;
+        this.hunger--;
+        return true;
+      }
     }
+
+    //IF YOU DIDNT FIND FOOR HERE IN THIS CELL.. RETURN FALSE
     return false;
   }
 
@@ -727,11 +799,20 @@ class Animal {
     if (this.pos.y < 0) this.pos.y = height * RESOLUTION;
   }
 
-  getCloseAnimals() {
+  getCloseAnimals(respectLimit) {
     let animalsToRet = [];
     this.closeCells = this.getCloseCells();
 
-    for (let c of this.closeCells) {
+    let filteredCells;
+    if (respectLimit) {
+      filteredCells = this.closeCells.filter(
+        (k) => k.animalsHere.length < MAX_ANIMALS_PER_CELL
+      );
+    } else {
+      filteredCells = this.closeCells;
+    }
+
+    for (let c of filteredCells) {
       for (let a of c.animalsHere) {
         if (a.id != this.id) animalsToRet.push(a);
       }
@@ -741,7 +822,7 @@ class Animal {
   }
 
   getClosestFuckBuddy() {
-    let aas = this.getCloseAnimals();
+    let aas = this.getCloseAnimals(true);
     let filteredCloseAnimals = aas.filter((k) =>
       this.amICompatibleToBreedWith(k)
     );
@@ -753,20 +834,14 @@ class Animal {
     //if (true) return true;
     if (!animal) return false;
     let areThemCompatToMe =
-      Math.abs(animal.genes.r - this.genes.r) <
-        this.genes.compatibilityTreshhold &&
-      Math.abs(animal.genes.g - this.genes.g) <
-        this.genes.compatibilityTreshhold &&
-      Math.abs(animal.genes.b - this.genes.b) <
-        this.genes.compatibilityTreshhold;
+      Math.abs(animal.genes.r - this.genes.r) < COMPATIBILITY_TRESHOLD &&
+      Math.abs(animal.genes.g - this.genes.g) < COMPATIBILITY_TRESHOLD &&
+      Math.abs(animal.genes.b - this.genes.b) < COMPATIBILITY_TRESHOLD;
 
     let amICompatTothem =
-      Math.abs(animal.genes.r - this.genes.r) <
-        animal.genes.compatibilityTreshhold &&
-      Math.abs(animal.genes.g - this.genes.g) <
-        animal.genes.compatibilityTreshhold &&
-      Math.abs(animal.genes.b - this.genes.b) <
-        animal.genes.compatibilityTreshhold;
+      Math.abs(animal.genes.r - this.genes.r) < COMPATIBILITY_TRESHOLD &&
+      Math.abs(animal.genes.g - this.genes.g) < COMPATIBILITY_TRESHOLD &&
+      Math.abs(animal.genes.b - this.genes.b) < COMPATIBILITY_TRESHOLD;
 
     return areThemCompatToMe && amICompatTothem;
   }
@@ -776,7 +851,7 @@ class Animal {
   }
 
   amIOldEnoughToFuck = () => {
-    return animal.age > animal.genes.minAgeToGetPregnant;
+    return this.age > this.genes.minAgeToGetPregnant;
   };
 
   amICompatibleToBreedWith(animal) {
@@ -837,7 +912,7 @@ class Animal {
 
     if (this.strokeColor && !this.dead) {
       ctx.strokeStyle = this.strokeColor;
-      ctx.stroke();
+      if (!!renderStrokes.checked) ctx.stroke();
     }
 
     ctx.fill();
@@ -879,6 +954,11 @@ class Animal {
         : this.dead
         ? "#000000" //dead black
         : null;
+
+    //IF YOU EAT DEAD MEAT...
+    if (this.scavenger && this.state == 1 && this.target instanceof Animal) {
+      return "black";
+    }
 
     return c;
   }

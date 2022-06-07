@@ -15,7 +15,7 @@
 
         #game,
         #animalContainer,
-        canvas {
+        canvas#renderCanvas {
             display: block;
             position: fixed;
             top: 0px;
@@ -59,6 +59,33 @@
             touch-action: none; */
         }
 
+        #statsCanvas {
+            display: block;
+
+            top: 0px;
+            right: 1px;
+            border: 1px solid white;
+        }
+
+        #containerOfStatsCanvas {
+            width: 600px;
+            height: 300px;
+            position: fixed;
+            top: 0px;
+            right: 30px;
+            padding: 10px;
+            height: max-content
+        }
+
+        #containerOfStatsCanvas #colorNames p {
+            position: relative;
+            display: inline-block;
+            line-height: 100%;
+            margin: 5px;
+            background: black;
+            padding: 3px;
+        }
+
         control {
 
             z-index: 99999999999;
@@ -69,8 +96,8 @@
             backdrop-filter: blur(4px);
             color: white;
             /* buffered-rendering: revert; */
-            width: 50vw;
-            height: 50vh;
+            width: 100vw;
+            height: 94vh;
             padding: 10px;
         }
     </style>
@@ -84,11 +111,18 @@
         <p> targets? <input type="checkbox" id="targetsCheckbox" checked="checked"
                 onchange="(e)=>{handleTargetsCheckbox(e)}"></p>
 
+        <p> state stroke? <input type="checkbox" id="renderStrokes" checked="checked"></p>
+
+
         <p> pregnancy indicators? <input type="checkbox" id="pregnancyCheckbox" checked="checked"></p>
 
-        <p>every: <input id="everyHowManyFrames" value="20" /></p>
+        <p>every: <input id="everyHowManyFrames" value="10" /></p>
         <div id="contentOfControl"></div>
 
+        <div id="containerOfStatsCanvas">
+            <canvas id="statsCanvas" width="600" height="400"></canvas>
+            <div id="colorNames"></div>
+        </div>
     </control>
     <button id="hidePanel" onclick="togglePanel()">togglePanel</button>
     <button id="pause" onclick="pausebutton()">pause</button>
