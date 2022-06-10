@@ -70,8 +70,8 @@ class Animal {
       hungerIncrease: 0.012,
       pregnancyDuration: 6 * YEAR,
       maxChildrenWhenPregnant: Math.floor(Math.random() * 6) + 1,
-      chancesToGetPregnant: Math.random(),
-      minAgeToGetPregnant: 12 * YEAR,
+      chancesToGetPregnant: Math.random() + 0.3,
+      minAgeToGetPregnant: 10 * YEAR,
       clockEvery: 10,
 
       maxSize: RESOLUTION * (Math.random() * 20 + 5),
