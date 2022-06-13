@@ -6,7 +6,7 @@ class Cell {
     this.y = y;
     // this.container = elem;
     this.animalsHere = [];
-
+    this.latitude = (this.y / (height / cellWidth) - 0.5) * 2;
     this.genes = {
       foodIncrease: 30,
     };
@@ -68,8 +68,8 @@ class Cell {
   getNeighbours() {
     if (this.neighbours) return this.neighbours;
     let arrRet = [];
-    let x = this.pos.x / this.cellWidth;
-    let y = this.pos.y / this.cellWidth;
+    let x = this.x;
+    let y = this.y;
     try {
       arrRet.push(grid[y - 1][x - 1]);
     } catch (e) {}
@@ -95,6 +95,52 @@ class Cell {
       arrRet.push(grid[y + 1][x + 1]);
     } catch (e) {}
 
+    if (y == 0) {
+      try {
+        arrRet.push(grid[grid.length - 1][x - 1]);
+      } catch (e) {}
+      try {
+        arrRet.push(grid[grid.length - 1][x]);
+      } catch (e) {}
+      try {
+        arrRet.push(grid[grid.length - 1][x + 1]);
+      } catch (e) {}
+    }
+    if (y == grid.length - 1) {
+      try {
+        arrRet.push(grid[0][x - 1]);
+      } catch (e) {}
+      try {
+        arrRet.push(grid[0][x]);
+      } catch (e) {}
+      try {
+        arrRet.push(grid[0][x + 1]);
+      } catch (e) {}
+    }
+
+    if (x == 0) {
+      try {
+        arrRet.push(grid[y - 1][grid[0].length - 1]);
+      } catch (e) {}
+      try {
+        arrRet.push(grid[y][grid[0].length - 1]);
+      } catch (e) {}
+      try {
+        arrRet.push(grid[y + 1][grid[0].length - 1]);
+      } catch (e) {}
+    }
+    if (x == grid[0].length - 1) {
+      try {
+        arrRet.push(grid[y - 1][0]);
+      } catch (e) {}
+      try {
+        arrRet.push(grid[y][0]);
+      } catch (e) {}
+      try {
+        arrRet.push(grid[y + 1][0]);
+      } catch (e) {}
+    }
+
     let ret = arrRet.filter((k) => k);
     this.neighbours = ret;
     return ret;
@@ -114,10 +160,24 @@ class Cell {
     );
   }
 
+  getGrowthAccordingToSeason = () => {
+    if (Math.floor(Math.random() * CELLCLOCK_TO_REPRODUCE) == 0) {
+      let tempGrowth = Math.sin(this.FRAMENUM / SEASON_YEAR_DURATION);
+
+      tempGrowth *= this.latitude;
+      tempGrowth *= this.genes.foodIncrease;
+      if (this.type == 2) tempGrowth *= -1;
+
+      this.growth = tempGrowth; //+ this.genes.foodIncrease
+      return this.growth;
+    }
+    return 0;
+  };
+
   grow() {
     if (Math.floor(Math.random() * CELLCLOCK_TO_REPRODUCE) == 0) {
       this.food += this.genes.foodIncrease;
-      if (this.food >= this.maxFood * 0.9) {
+      if (this.food >= this.maxFood * COEF_OF_MAX_FOOD_TO_REPRODUCE) {
         let neighs = this.getNeighbours();
         //console.log(neighs);
         for (let n of neighs) {
@@ -135,16 +195,20 @@ class Cell {
   }
 
   tick(FRAMENUM) {
+    this.FRAMENUM = FRAMENUM;
+    this.checkCorpsesHere();
     if (this.type == 1) return;
     //EVERY 10 FRAMES THEY GET 1 MORE FOOD, WHEN THEY GET TO THE LIMIT THEY GROW OUTWARDS
     if (this.food <= 0) this.type = 1;
 
     this.grow();
+    this.food += this.getGrowthAccordingToSeason();
 
     if (this.food < 0) this.food = 0;
     if (this.food > this.maxFood) this.food = this.maxFood;
 
-    this.checkCorpsesHere();
+    //DEBUG STUFF:
+    //   if (this == grid[0][0]) console.log(this.getGrowthAccordingToSeason());
   }
 
   checkCorpsesHere() {

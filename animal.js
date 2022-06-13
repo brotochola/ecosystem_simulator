@@ -47,7 +47,7 @@ class Animal {
       "escapingFromFuckBuddy", //8
     ];
 
-    console.log(this.id + " " + this.lastName);
+    //console.log(this.id + " " + this.lastName);
 
     //CONSCIOUSNESS
     this.state = 0; //Math.floor(Math.random() * this.possibleStates.length);
@@ -59,7 +59,7 @@ class Animal {
       sightLimit: 8,
       fear: Math.random(),
       diet: Math.random(), //0 is carnivore, 1herbi, 0.5 omni
-      maxSpeed: 2 * Math.random() + 1,
+      agility: 2 * Math.random() + 1,
       maxAcceleration: 1,
       // compatibilityTreshhold: 0.5, //if 1 they can breed with anyone
       likability: Math.random(),
@@ -107,10 +107,13 @@ class Animal {
     this.health = this.genes.maxHealth;
     this.vel = new p5.Vector(Math.random() * 10 - 5, Math.random() * 10 - 5); //this is a vector, from 0 to 1 both values
     this.acc = new p5.Vector(0, 0);
-    this.vel.limit(this.genes.maxSpeed);
+    this.vel.limit(this.getMaxSpeed());
 
     //console.log("## new animal is born", this.id);
   }
+  getMaxSpeed = () => {
+    return this.genes.agility * this.size * COEF_OF_SIZE_THAT_DEFINES_SPEED;
+  };
 
   initializeValuesAccordingToGenes = () => {
     this.getMyTypeOfFood();
@@ -169,8 +172,8 @@ class Animal {
       }
     } else {
       this.vel.add(
-        new p5.Vector(Math.random() * 2 - 1, Math.random() * 2 - 1).setMag(
-          (Math.random() * this.genes.maxSpeed) / 2
+        new p5.Vector(Math.random() * 2 - 1, Math.random() * 2 - 1).limit(
+          (Math.random() * this.getMaxSpeed()) / 2
         )
       );
     }
@@ -562,7 +565,7 @@ class Animal {
     //THE HUNGER ADDS REALTIVE TO THE SIZE AND MOVEMENT
     let howMuch =
       this.genes.hungerIncrease *
-      this.size *
+      (this.size * COEF_OF_SIZE_THAT_DEFINES_HUNGER_INCREASE) *
       (Math.abs(this.vel.x) + Math.abs(this.vel.y));
     if (!isNaN(howMuch)) this.hunger += howMuch;
   }
@@ -600,7 +603,7 @@ class Animal {
     //this.acc.limit(this.genes.maxAcceleration);
     this.vel.add(this.acc);
     this.makeThemShake();
-    this.vel.limit(this.genes.maxSpeed);
+    this.vel.limit(this.getMaxSpeed());
 
     this.pos.add(this.vel);
 
@@ -690,7 +693,7 @@ class Animal {
     this.size = (this.age / this.genes.lifeExpectancy) * this.genes.maxSize;
 
     if (this.size > this.genes.maxSize) this.size = this.genes.maxSize;
-    if (this.size < 3) this.size = 3;
+    if (this.size < MIN_ANIMAL_SIZE) this.size = MIN_ANIMAL_SIZE;
   }
 
   getMyI() {
