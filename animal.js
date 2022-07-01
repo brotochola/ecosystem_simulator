@@ -803,25 +803,33 @@ class Animal {
   }
 
   getCloseAnimals(respectLimit) {
-    let animalsToRet = [];
-    this.closeCells = this.getCloseCells();
+    // let animalsToRet = [];
+    // this.closeCells = this.getCloseCells();
 
-    let filteredCells;
-    if (respectLimit) {
-      filteredCells = this.closeCells.filter(
-        (k) => k.animalsHere.length < MAX_ANIMALS_PER_CELL
-      );
-    } else {
-      filteredCells = this.closeCells;
-    }
+    // let filteredCells;
+    // if (respectLimit) {
+    //   filteredCells = this.closeCells.filter(
+    //     (k) => k.animalsHere.length < MAX_ANIMALS_PER_CELL
+    //   );
+    // } else {
+    //   filteredCells = this.closeCells;
+    // }
 
-    for (let c of filteredCells) {
-      for (let a of c.animalsHere) {
-        if (a.id != this.id) animalsToRet.push(a);
-      }
-    }
+    // for (let c of filteredCells) {
+    //   for (let a of c.animalsHere) {
+    //     if (a.id != this.id) animalsToRet.push(a);
+    //   }
+    // }
 
-    return uniq(animalsToRet);
+    // return uniq(animalsToRet);
+
+    let ret = tree.retrieve({
+      x: this.pos.x - this.size * 0.5,
+      y: this.pos.y - this.size * 0.5,
+      height: this.size,
+      width: this.size,
+    });
+    return ret.map((k) => k.animal);
   }
 
   getClosestFuckBuddy() {
@@ -911,7 +919,13 @@ class Animal {
     ctx.lineWidth = 3;
     this.strokeColor = this.getStrokeColor();
 
-    ctx.arc(this.pos.x, this.pos.y, this.size / 2, 0, 2 * Math.PI);
+    ctx.arc(
+      Math.floor(this.pos.x),
+      Math.floor(this.pos.y),
+      Math.floor(this.size / 2),
+      0,
+      2 * Math.PI
+    );
 
     if (this.strokeColor && !this.dead) {
       ctx.strokeStyle = this.strokeColor;

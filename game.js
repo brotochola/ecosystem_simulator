@@ -10,6 +10,7 @@ var height = window.innerHeight * 0.95;
 var animals = [];
 let targetsCheckbox;
 let pregnancyCheckbox;
+var tree;
 let statsCanvas;
 let stats = [];
 let updateDataEveryFrames;
@@ -60,13 +61,28 @@ const removeAnimalFromAllCells = (animal) => {
     }
   }
 };
+var drawQuadtree = function (node) {
+  var bounds = node.bounds;
 
+  //no subnodes? draw the current node
+  if (node.nodes.length === 0) {
+    ctx.strokeStyle = "rgba(255,0,0,1)";
+    ctx.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
+
+    //has subnodes? drawQuadtree them!
+  } else {
+    for (var i = 0; i < node.nodes.length; i = i + 1) {
+      drawQuadtree(node.nodes[i]);
+    }
+  }
+};
 const gameLoop = () => {
   if (!pause) {
     // if (animals.length == 0) {
     //   alert("all animals died");
     //   return;
     // }
+    tree.clear();
     FRAMENUM++;
     ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
@@ -76,7 +92,17 @@ const gameLoop = () => {
       }
     }
 
-    for (animal of animals) animal.tick(FRAMENUM);
+    for (animal of animals) {
+      animal.tick(FRAMENUM);
+
+      tree.insert({
+        x: Math.floor(animal.getPos().x),
+        y: Math.floor(animal.getPos().y),
+        width: animal.size,
+        height: animal.size,
+        animal: animal,
+      });
+    }
 
     if (renderCheckBox.checked) {
       if (document.querySelector("#renderCanvas").style.display != "block")
@@ -104,6 +130,8 @@ const gameLoop = () => {
     getStatsData();
 
     showDataInControlPanel();
+
+    drawQuadtree(tree);
 
     requestAnimationFrame(gameLoop);
   }
@@ -162,5 +190,17 @@ const init = () => {
   renderStrokes = document.querySelector("#renderStrokes");
 
   statsCanvas = document.querySelector("#statsCanvas");
+
+  tree = new Quadtree(
+    {
+      x: 0,
+      y: 0,
+      width: window.innerWidth,
+      height: window.innerHeight,
+    },
+    10, //maxObjects
+    10 //maxlevels
+  );
+
   gameLoop();
 };
