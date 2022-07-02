@@ -155,6 +155,8 @@ const addShortCuts = () => {
 
     if (key == "p" || key == " ") pausebutton();
     else if (key == "q") SHOW_QUADTREE = !SHOW_QUADTREE;
+    else if (key == "s") renderStrokes.checked = !renderStrokes.checked;
+    else if (key == "r") renderCheckBox.checked = !renderCheckBox.checked;
     else if (key == "t") targetsCheckbox.checked = !targetsCheckbox.checked;
   };
 };
