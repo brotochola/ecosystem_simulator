@@ -99,8 +99,21 @@ function capitalize(word) {
   return word[0].toUpperCase() + word.slice(1).toLowerCase();
 }
 
-const getAnimalAtPosition = (x, y) => {
-  let sortedAnimals = animals.sort((a, b) => {
+const getAnimalAtPosition = (x, y, cell) => {
+  let temp = [];
+  if (USE_QUADTREE) {
+    temp = tree.retrieve({
+      x: x - cellWidth / 2,
+      y: y - cellWidth / 2,
+      width: cellWidth,
+      height: cellWidth,
+    });
+    temp = temp.map((k) => k.animal);
+  } else {
+    temp = cell.animalsHere;
+  }
+
+  let sortedAnimals = temp.sort((a, b) => {
     if (distance(a.getPos(), { x, y }) > distance(b.getPos(), { x, y })) {
       return 1;
     } else {
@@ -108,6 +121,16 @@ const getAnimalAtPosition = (x, y) => {
     }
   });
 
+  /////////// THIS DRAWS THE SELECTION BOX, WHEN YOU CLICK
+  // ctx.beginPath();
+  // ctx.moveTo(x - cellWidth / 2, y - cellWidth / 2);
+  // ctx.lineWidth = 2;
+  // ctx.strokeStyle = "#ff00ff";
+  // ctx.rect(x - cellWidth / 2, y - cellWidth / 2, cellWidth, cellWidth);
+  // ctx.stroke();
+  // ctx.closePath();
+  //////////////
+  console.log(temp);
   return sortedAnimals[0];
 };
 
@@ -128,9 +151,10 @@ const sortAnimalsByDistanceTo = (animalsArr, obj) => {
 
 const addShortCuts = () => {
   window.onkeydown = (e) => {
-    let key = e.key;
+    let key = e.key.toLowerCase();
+
     if (key == "p" || key == " ") pausebutton();
-    // else if (key == "q") SHOW_QUADTREE = !SHOW_QUADTREE;
+    else if (key == "q") SHOW_QUADTREE = !SHOW_QUADTREE;
     else if (key == "t") targetsCheckbox.checked = !targetsCheckbox.checked;
   };
 };

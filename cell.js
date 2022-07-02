@@ -44,6 +44,7 @@ class Cell {
     /////definition of stuff:
   }
   removeMe(who) {
+    if (USE_QUADTREE) return;
     let where;
     for (let i = 0; i < this.animalsHere.length; i++) {
       let a = this.animalsHere[i];
@@ -54,6 +55,7 @@ class Cell {
     }
   }
   addMe(who) {
+    if (USE_QUADTREE) return;
     // console.log("# add me", this, who);
     let areYouHere = false;
     for (let a of this.animalsHere) {
@@ -199,6 +201,15 @@ class Cell {
       }
     }
   }
+  getAnimalsHereWithQuadtree() {
+    let tempResult = tree.retrieve({
+      x: this.pos.x,
+      y: this.pos.y,
+      width: this.cellWidth - 1,
+      height: this.cellWidth - 1,
+    });
+    this.animalsHere = tempResult.map((k) => k.animal);
+  }
 
   tick(FRAMENUM) {
     this.FRAMENUM = FRAMENUM;
@@ -212,6 +223,8 @@ class Cell {
 
     if (this.food < 0) this.food = 0;
     if (this.food > this.maxFood) this.food = this.maxFood;
+
+    if (USE_QUADTREE) this.getAnimalsHereWithQuadtree();
 
     //DEBUG STUFF:
     //   if (this == grid[0][0]) console.log(this.getGrowthAccordingToSeason());

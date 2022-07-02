@@ -203,7 +203,7 @@ class Animal {
     this.pregnant = false;
     this.target = null;
     this.dead = true;
-    // removeAnimalFromAllCells(this);
+    if (!USE_QUADTREE) removeAnimalFromAllCells(this);
     this.state = 7; //dead
     this.vel = new p5.Vector(0, 0);
 
@@ -221,7 +221,7 @@ class Animal {
       if (this.decomposition > 100) {
         let i = this.getMyI();
         animals.splice(i, 1);
-        removeAnimalFromAllCells(this);
+        // removeAnimalFromAllCells(this);
       }
       return true;
     } else {
@@ -655,11 +655,15 @@ class Animal {
   }
 
   addOrRemoveMeFromCell() {
-    let tempGetcell = this.getCell();
-    if (this.ImAtCell != tempGetcell) {
-      if (this.ImAtCell) this.ImAtCell.removeMe(this);
-      this.ImAtCell = tempGetcell;
-      if (this.ImAtCell) this.ImAtCell.addMe(this);
+    if (USE_QUADTREE) {
+      this.ImAtCell = this.getCell();
+    } else {
+      let tempGetcell = this.getCell();
+      if (this.ImAtCell != tempGetcell) {
+        if (this.ImAtCell) this.ImAtCell.removeMe(this);
+        this.ImAtCell = tempGetcell;
+        if (this.ImAtCell) this.ImAtCell.addMe(this);
+      }
     }
   }
   checkIfItsTooCrowdedHere() {

@@ -17,7 +17,7 @@ let updateDataEveryFrames;
 ////control panel ///////
 ///////////////////////
 var MAX_CELL_SIZE = 33;
-//var MAX_LEVELS_FOR_QUADTREE = 5; //5 MATCHES WITH THE CELL SIZE
+var MAX_LEVELS_FOR_QUADTREE = 5; //5 MATCHES WITH THE CELL SIZE
 var cellWidth = setCellWidth(
   Math.min(window.innerWidth * 0.95, window.innerHeight * 0.95)
 );
@@ -48,13 +48,18 @@ var COEF_OF_SIZE_THAT_DEFINES_SPEED = 0.1;
 var COEF_OF_SIZE_THAT_DEFINES_HUNGER_INCREASE = 0.1;
 var FACTOR_HOW_MUCH_FOOD_ANIMALS_EAT_RELATIVE_TO_SIZE = 1;
 
+////// ALGORITHM SELECTION:
+var USE_QUADTREE = false;
+
+////
+
 var YEAR = 1;
 var MIN_DISTANCE_FACTOR_TO_INTERACT = 2;
 var MAX_MUTATION_FACTOR = 0.05;
 var RESOLUTION = 1;
 var SAVE_LOG_OF_ANIMALS = true;
 var SAVE_GENERAL_STATS = false;
-//var SHOW_QUADTREE = false;
+var SHOW_QUADTREE = true;
 var SHOW_SIGHT_SQUARE = false;
 //////
 const pausebutton = () => {
@@ -71,28 +76,37 @@ const removeAnimalFromAllCells = (animal) => {
     }
   }
 };
-// var drawQuadtree = function (node) {
-//   var bounds = node.bounds;
+var drawQuadtree = function (node) {
+  if (!USE_QUADTREE) return;
+  var bounds = node.bounds;
 
-//   //no subnodes? draw the current node
-//   if (node.nodes.length === 0) {
-//     ctx.strokeStyle = "rgba(255,0,0,1)";
-//     ctx.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
+  //no subnodes? draw the current node
+  if (node.nodes.length === 0) {
+    ctx.strokeStyle = "rgba(255,0,0,1)";
+    ctx.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
 
-//     //has subnodes? drawQuadtree them!
-//   } else {
-//     for (var i = 0; i < node.nodes.length; i = i + 1) {
-//       drawQuadtree(node.nodes[i]);
-//     }
-//   }
-// };
+    //has subnodes? drawQuadtree them!
+  } else {
+    for (var i = 0; i < node.nodes.length; i = i + 1) {
+      drawQuadtree(node.nodes[i]);
+    }
+  }
+};
+
+const tickOfQuadTree = () => {
+  if (!USE_QUADTREE) return;
+  tree.clear();
+  for (animal of animals) {
+    animal.addInQuadTree();
+  }
+};
 const gameLoop = () => {
   if (!pause) {
     // if (animals.length == 0) {
     //   alert("all animals died");
     //   return;
     // }
-    // tree.clear();
+    tickOfQuadTree();
     FRAMENUM++;
     ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
@@ -101,10 +115,6 @@ const gameLoop = () => {
         grid[i][j].tick(FRAMENUM);
       }
     }
-
-    // for (animal of animals) {
-    //   animal.addInQuadTree();
-    // }
 
     for (animal of animals) {
       animal.tick(FRAMENUM);
@@ -144,7 +154,7 @@ const renderEverything = () => {
     }
   }
 
-  // if (SHOW_QUADTREE) drawQuadtree(tree);
+  if (SHOW_QUADTREE && USE_QUADTREE) drawQuadtree(tree);
 
   for (animal of animals) animal.render(FRAMENUM);
 };
@@ -180,7 +190,7 @@ const handleClickOnCanvas = (e) => {
   let cell = grid[cellY][cellX];
   window.cell = cell;
   console.log("#CELL", cell.food, "Animals", cell.animalsHere.length);
-  let animalFound = getAnimalAtPosition(e.x, e.y);
+  let animalFound = getAnimalAtPosition(e.x, e.y, cell);
 
   if (animalFound instanceof Animal) {
     window.foundAnimal = animalFound;
@@ -189,18 +199,19 @@ const handleClickOnCanvas = (e) => {
   }
 };
 
-// const createQuadtree = () => {
-//   tree = new Quadtree(
-//     {
-//       x: 0,
-//       y: 0,
-//       width,
-//       height,
-//     },
-//     Math.floor(MAX_ANIMALS_PER_CELL / 2), //maxObjects
-//     MAX_LEVELS_FOR_QUADTREE //maxlevels
-//   );
-// };
+const createQuadtree = () => {
+  if (!USE_QUADTREE) return;
+  tree = new Quadtree(
+    {
+      x: 0,
+      y: 0,
+      width,
+      height,
+    },
+    1, //maxObjects
+    MAX_LEVELS_FOR_QUADTREE //maxlevels
+  );
+};
 
 const init = () => {
   localStorage.clear();
@@ -224,7 +235,7 @@ const init = () => {
 
   statsCanvas = document.querySelector("#statsCanvas");
 
-  // createQuadtree();
+  if (USE_QUADTREE) createQuadtree();
 
   addShortCuts();
 
