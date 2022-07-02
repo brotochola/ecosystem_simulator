@@ -149,7 +149,10 @@ class Cell {
   }
 
   getPos() {
-    return this.pos.copy();
+    return new p5.Vector(
+      this.pos.x + this.cellWidth / 2,
+      this.pos.y + this.cellWidth / 2
+    );
   }
 
   // color(col) {
@@ -163,7 +166,7 @@ class Cell {
   }
 
   getGrowthAccordingToSeason = () => {
-    if (Math.floor(Math.random() * CELLCLOCK_TO_REPRODUCE) == 0) {
+    if (Math.floor(Math.random() * CELLCLOCK_TO_REPRODUCE_GRASS) == 0) {
       let tempGrowth = Math.sin(this.FRAMENUM / SEASON_YEAR_DURATION);
 
       tempGrowth *= this.latitude;
@@ -177,7 +180,8 @@ class Cell {
   };
 
   grow() {
-    if (Math.floor(Math.random() * CELLCLOCK_TO_REPRODUCE) == 0) {
+    if (Math.floor(Math.random() * CELLCLOCK_TO_REPRODUCE_GRASS) == 0) {
+      this.checkCorpsesHere();
       this.food += this.genes.foodIncrease;
       if (this.food >= this.maxFood * COEF_OF_MAX_FOOD_TO_REPRODUCE) {
         let neighs = this.getNeighbours();
@@ -198,7 +202,7 @@ class Cell {
 
   tick(FRAMENUM) {
     this.FRAMENUM = FRAMENUM;
-    this.checkCorpsesHere();
+
     if (this.type == 1) return;
     //EVERY 10 FRAMES THEY GET 1 MORE FOOD, WHEN THEY GET TO THE LIMIT THEY GROW OUTWARDS
     if (this.food <= 0) this.type = 1;
@@ -218,6 +222,7 @@ class Cell {
     for (let animal of dead) {
       this.food +=
         animal.decomposition * animal.size * COEF_FERTILIZATION_OF_DEAD_ANIMALS;
+      //THIS MAKES NEW GRASS IF IT WAS DESERT, FROMT HE TYPE OF FOOD THE ANIMAL ATE
       if (this.food > this.maxFood * 0.1 && this.type == 1)
         this.type = animal.myTypeOfFood;
     }
@@ -244,12 +249,7 @@ class Cell {
   render(FRAMENUM) {
     ctx.beginPath();
 
-    ctx.rect(
-      this.pos.x - this.cellWidth / 2,
-      this.pos.y - this.cellWidth / 2,
-      this.cellWidth + 1,
-      this.cellWidth + 1
-    );
+    ctx.rect(this.pos.x, this.pos.y, this.cellWidth + 1, this.cellWidth + 1);
     ctx.fillStyle = this.getColor();
     ctx.fill();
     ctx.closePath();

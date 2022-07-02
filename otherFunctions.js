@@ -99,11 +99,38 @@ function capitalize(word) {
   return word[0].toUpperCase() + word.slice(1).toLowerCase();
 }
 
+const getAnimalAtPosition = (x, y) => {
+  let sortedAnimals = animals.sort((a, b) => {
+    if (distance(a.getPos(), { x, y }) > distance(b.getPos(), { x, y })) {
+      return 1;
+    } else {
+      return -1;
+    }
+  });
+
+  return sortedAnimals[0];
+};
+
+const sortAnimalsByDistanceTo = (animalsArr, obj) => {
+  let sortedAnimals = animals.sort((a, b) => {
+    let distA = calcDistanceFaster(a, obj);
+    let distB = calcDistanceFaster(b, obj);
+
+    if (distA > distB) {
+      return 1;
+    } else {
+      return -1;
+    }
+  });
+
+  return sortedAnimals;
+};
+
 const addShortCuts = () => {
   window.onkeydown = (e) => {
     let key = e.key;
-    if (key == "p") pausebutton();
-    else if (key == "q") SHOW_QUADTREE = !SHOW_QUADTREE;
+    if (key == "p" || key == " ") pausebutton();
+    // else if (key == "q") SHOW_QUADTREE = !SHOW_QUADTREE;
     else if (key == "t") targetsCheckbox.checked = !targetsCheckbox.checked;
   };
 };
@@ -253,6 +280,15 @@ const distance = (a, b) => {
   let dify = b.y - a.y;
   let ret = Math.sqrt(difx * difx + dify * dify);
   return ret;
+};
+
+const setCellWidth = (w) => {
+  let temp = w;
+  for (let i = 0; i < 10; i++) {
+    if (temp > MAX_CELL_SIZE) temp *= 0.5;
+    else return temp;
+  }
+  return temp;
 };
 
 const getAnimalByID = (id) => {
