@@ -28,11 +28,11 @@ var height = width;
 var USE_ANIMAL_LIMIT = true;
 var MAX_ANIMALS_PER_CELL = 5;
 var numberOfAnimals = 800;
-var animalsLimit = 1500;
+var animalsLimit = 1200;
 var PERCENTAGE_OF_ROCK_FLOOR = 0;
-var MAX_FOOD_OF_CELLS = 800;
+var MAX_FOOD_OF_CELLS = 1000;
 var MAX_POSSIBLE_SIZE_FOR_ANIMALS = 35;
-var CELLCLOCK_TO_REPRODUCE_GRASS = 8; //8
+var CELLCLOCK_TO_REPRODUCE_GRASS = 80; //8
 var COEF_FERTILIZATION_OF_DEAD_ANIMALS = 0.005;
 var COEF_HEALTH_DECREASE_BY_HUNGER = 0.01;
 var COEF_HEALTH_DECREASE_BY_AGE = 2;
@@ -108,7 +108,10 @@ const gameLoop = () => {
     // }
     tickOfQuadTree();
     FRAMENUM++;
-    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    //  ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    ctx.rect(0, 0, width, height);
+    ctx.fillStyle = "#544a4a";
+    ctx.fill();
 
     for (let i = 0; i < height / cellWidth; i++) {
       for (let j = 0; j < width / cellWidth; j++) {
@@ -224,6 +227,8 @@ const init = () => {
   canvas = document.createElement("canvas");
   canvas.id = "renderCanvas";
   canvas.onclick = (e) => handleClickOnCanvas(e);
+  canvas.onmousemove = (e) => handleMouseMoveOnCanvas(e);
+
   document.body.appendChild(canvas);
   canvas.width = width * RESOLUTION;
   canvas.height = height * RESOLUTION;

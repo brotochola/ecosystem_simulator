@@ -162,41 +162,31 @@ class Cell {
   // }
 
   getMaxFood() {
-    return Math.floor(
-      Math.random() * MAX_FOOD_OF_CELLS * 0.1 + MAX_ANIMALS_PER_CELL * 0.9
-    );
+    return Math.floor(Math.random() * MAX_FOOD_OF_CELLS * 0.1);
   }
 
   getGrowthAccordingToSeason = () => {
-    if (Math.floor(Math.random() * CELLCLOCK_TO_REPRODUCE_GRASS) == 0) {
-      let tempGrowth = Math.sin(this.FRAMENUM / SEASON_YEAR_DURATION);
-
-      tempGrowth *= this.latitude;
-      tempGrowth *= this.genes.foodIncrease;
-      if (this.type == 2) tempGrowth *= -1;
-
-      this.growth = tempGrowth; //+ this.genes.foodIncrease
-      return this.growth;
-    }
-    return 0;
+    let tempGrowth = Math.sin(this.FRAMENUM / SEASON_YEAR_DURATION);
+    tempGrowth *= this.latitude;
+    tempGrowth *= this.genes.foodIncrease;
+    if (this.type == 2) tempGrowth *= -1;
+    this.growth = tempGrowth; //+ this.genes.foodIncrease
+    return this.growth;
   };
 
   grow() {
-    if (Math.floor(Math.random() * CELLCLOCK_TO_REPRODUCE_GRASS) == 0) {
-      this.checkCorpsesHere();
-      this.food += this.genes.foodIncrease;
-      if (this.food >= this.maxFood * COEF_OF_MAX_FOOD_TO_REPRODUCE) {
-        let neighs = this.getNeighbours();
-        //console.log(neighs);
-        for (let n of neighs) {
-          if (n.type == 1) {
-            //IF THE CELL IS ROCK, CONVERT IT
-            n.type = this.type;
-            if (!n.maxFood) n.maxFood = this.getMaxFood();
-          }
-          if (n.type == this.type) {
-            this.food += this.genes.foodIncrease;
-          }
+    this.food += this.genes.foodIncrease;
+    if (this.food >= this.maxFood * COEF_OF_MAX_FOOD_TO_REPRODUCE) {
+      let neighs = this.getNeighbours();
+      //console.log(neighs);
+      for (let n of neighs) {
+        if (n.type == 1) {
+          //IF THE CELL IS ROCK, CONVERT IT
+          n.type = this.type;
+          if (!n.maxFood) n.maxFood = this.getMaxFood();
+        }
+        if (n.type == this.type) {
+          this.food += this.genes.foodIncrease;
         }
       }
     }
@@ -214,12 +204,16 @@ class Cell {
   tick(FRAMENUM) {
     this.FRAMENUM = FRAMENUM;
 
-    if (this.type == 1) return;
+    //if (this.type == 1) return;
     //EVERY 10 FRAMES THEY GET 1 MORE FOOD, WHEN THEY GET TO THE LIMIT THEY GROW OUTWARDS
     if (this.food <= 0) this.type = 1;
 
-    this.grow();
-    this.food += this.getGrowthAccordingToSeason();
+    if (Math.floor(Math.random() * CELLCLOCK_TO_REPRODUCE_GRASS) == 0) {
+      this.grow();
+      this.food += this.getGrowthAccordingToSeason();
+    }
+    // }
+    this.checkCorpsesHere();
 
     if (this.food < 0) this.food = 0;
     if (this.food > this.maxFood) this.food = this.maxFood;
@@ -231,18 +225,25 @@ class Cell {
   }
 
   checkCorpsesHere() {
-    let dead = this.animalsHere.filter((k) => k.dead);
-    for (let animal of dead) {
-      this.food +=
-        animal.decomposition * animal.size * COEF_FERTILIZATION_OF_DEAD_ANIMALS;
-      //THIS MAKES NEW GRASS IF IT WAS DESERT, FROMT HE TYPE OF FOOD THE ANIMAL ATE
-      if (this.food > this.maxFood * 0.1 && this.type == 1)
-        this.type = animal.myTypeOfFood;
+    if (Math.floor(Math.random() * CELLCLOCK_TO_REPRODUCE_GRASS) == 0) {
+      let dead = this.animalsHere.filter((k) => k.dead);
+
+      for (let animal of dead) {
+        let howMuchMoreFood =
+          animal.decomposition *
+          animal.size *
+          COEF_FERTILIZATION_OF_DEAD_ANIMALS;
+
+        this.food += howMuchMoreFood;
+        //THIS MAKES NEW GRASS IF IT WAS DESERT, FROMT HE TYPE OF FOOD THE ANIMAL ATE
+        if (this.food > this.maxFood * 0.1 && this.type == 1)
+          this.type = animal.myTypeOfFood;
+      }
     }
   }
 
   getColor() {
-    if (this.type == 1) return "gray";
+    if (this.type == 1) return "rgba(0,0,0,0)";
     this.coefOpacity = this.food / MAX_FOOD_OF_CELLS;
     if (this.type == 0) {
       return "rgb(0, " + (this.coefOpacity * 200 + 50).toFixed(0) + ", 0)";

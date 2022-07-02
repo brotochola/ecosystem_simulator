@@ -203,7 +203,7 @@ class Animal {
     this.pregnant = false;
     this.target = null;
     this.dead = true;
-    if (!USE_QUADTREE) removeAnimalFromAllCells(this);
+    // if (!USE_QUADTREE) removeAnimalFromAllCells(this);
     this.state = 7; //dead
     this.vel = new p5.Vector(0, 0);
 
@@ -221,7 +221,7 @@ class Animal {
       if (this.decomposition > 100) {
         let i = this.getMyI();
         animals.splice(i, 1);
-        // removeAnimalFromAllCells(this);
+        removeAnimalFromAllCells(this);
       }
       return true;
     } else {
@@ -599,6 +599,8 @@ class Animal {
     });
   }
   tick(FRAMENUM) {
+    this.addOrRemoveMeFromCell();
+
     if (this.checkDeath()) return;
 
     let tempPerfoTime = performance.now();
@@ -634,8 +636,6 @@ class Animal {
     this.pos.add(this.vel);
 
     this.sumHunger();
-
-    this.addOrRemoveMeFromCell();
 
     this.howManyAnimalsInSameCell = (
       (this.ImAtCell || {}).animalsHere || []

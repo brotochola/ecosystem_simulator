@@ -134,6 +134,11 @@ const getAnimalAtPosition = (x, y, cell) => {
   return sortedAnimals[0];
 };
 
+const handleMouseMoveOnCanvas = (e) => {
+  window.mouseX = e.x;
+  window.mouseY = e.y;
+};
+
 const sortAnimalsByDistanceTo = (animalsArr, obj) => {
   let sortedAnimals = animals.sort((a, b) => {
     let distA = calcDistanceFaster(a, obj);
@@ -149,6 +154,18 @@ const sortAnimalsByDistanceTo = (animalsArr, obj) => {
   return sortedAnimals;
 };
 
+const addAnimalAtPosition = (age) => {
+  animals.push(
+    new Animal(
+      cellWidth,
+      grid,
+      null,
+      window.mouseX,
+      window.mouseY,
+      age //starting age
+    )
+  );
+};
 const addShortCuts = () => {
   window.onkeydown = (e) => {
     let key = e.key.toLowerCase();
@@ -158,6 +175,8 @@ const addShortCuts = () => {
     else if (key == "s") renderStrokes.checked = !renderStrokes.checked;
     else if (key == "r") renderCheckBox.checked = !renderCheckBox.checked;
     else if (key == "t") targetsCheckbox.checked = !targetsCheckbox.checked;
+    else if (key == "a") addAnimalAtPosition(0);
+    else if (key == "d") addAnimalAtPosition(9999);
   };
 };
 
@@ -312,9 +331,9 @@ const setCellWidth = (w) => {
   let temp = w;
   for (let i = 0; i < 10; i++) {
     if (temp > MAX_CELL_SIZE) temp *= 0.5;
-    else return temp;
+    else return Math.round(temp);
   }
-  return temp;
+  return Math.round(temp);
 };
 
 const getAnimalByID = (id) => {
