@@ -4,6 +4,8 @@ class Cell {
     this.pos = new p5.Vector(x * cellWidth, y * cellWidth);
     this.x = x;
     this.y = y;
+    this.cellX = x;
+    this.cellY = y;
     // this.container = elem;
     this.animalsHere = [];
     this.latitude = (this.y / (height / cellWidth) - 0.5) * 2;

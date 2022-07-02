@@ -5,8 +5,8 @@ var grid = [];
 var ctx;
 var pause = false;
 var canvas;
-var width = window.innerWidth * 0.95;
-var height = window.innerHeight * 0.95;
+var width = Math.floor(window.innerWidth * 0.95);
+var height = Math.floor(window.innerHeight * 0.95);
 var animals = [];
 let targetsCheckbox;
 let pregnancyCheckbox;
@@ -20,8 +20,8 @@ let updateDataEveryFrames;
 var cellWidth = 22;
 var USE_ANIMAL_LIMIT = true;
 var MAX_ANIMALS_PER_CELL = 5;
-var numberOfAnimals = 700;
-var animalsLimit = 800;
+var numberOfAnimals = 800;
+var animalsLimit = 1000;
 var PERCENTAGE_OF_ROCK_FLOOR = 0.5;
 var MAX_FOOD_OF_CELLS = 800;
 var MAX_POSSIBLE_SIZE_FOR_ANIMALS = 25;
@@ -45,7 +45,10 @@ var YEAR = 1;
 var MIN_DISTANCE_FACTOR_TO_INTERACT = 2;
 var MAX_MUTATION_FACTOR = 0.05;
 var RESOLUTION = 1;
-var SAVE_LOG_OF_ANIMALS = true;
+var SAVE_LOG_OF_ANIMALS = false;
+var SAVE_GENERAL_STATS = false;
+var SHOW_QUADTREE = false;
+var SHOW_SIGHT_SQUARE = false;
 //////
 const pausebutton = () => {
   console.log("pause");
@@ -94,14 +97,6 @@ const gameLoop = () => {
 
     for (animal of animals) {
       animal.tick(FRAMENUM);
-
-      tree.insert({
-        x: Math.floor(animal.getPos().x),
-        y: Math.floor(animal.getPos().y),
-        width: animal.size,
-        height: animal.size,
-        animal: animal,
-      });
     }
 
     if (renderCheckBox.checked) {
@@ -127,11 +122,11 @@ const gameLoop = () => {
     window.lastFrame = Date.now();
     window.frameRate = 1000 / durationOfFrame;
 
-    getStatsData();
-
-    showDataInControlPanel();
-
-    drawQuadtree(tree);
+    if (SAVE_GENERAL_STATS) {
+      getStatsData();
+      showDataInControlPanel();
+    }
+    if (SHOW_QUADTREE) drawQuadtree(tree);
 
     requestAnimationFrame(gameLoop);
   }
@@ -195,12 +190,14 @@ const init = () => {
     {
       x: 0,
       y: 0,
-      width: window.innerWidth,
-      height: window.innerHeight,
+      width,
+      height,
     },
-    10, //maxObjects
-    10 //maxlevels
+    Math.floor(MAX_ANIMALS_PER_CELL / 2), //maxObjects
+    5 //maxlevels
   );
+
+  addShortCuts();
 
   gameLoop();
 };

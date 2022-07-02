@@ -99,6 +99,15 @@ function capitalize(word) {
   return word[0].toUpperCase() + word.slice(1).toLowerCase();
 }
 
+const addShortCuts = () => {
+  window.onkeydown = (e) => {
+    let key = e.key;
+    if (key == "p") pausebutton();
+    else if (key == "q") SHOW_QUADTREE = !SHOW_QUADTREE;
+    else if (key == "t") targetsCheckbox.checked = !targetsCheckbox.checked;
+  };
+};
+
 const showDataInControlPanel = () => {
   let every = document.querySelector("#everyHowManyFrames").value;
   if (!every) return;
@@ -229,11 +238,20 @@ const renderStatsData = () => {
   }
 };
 
+const calcDistanceFaster = (a, b) => {
+  if (a.cellX == undefined || b.cellX == undefined) {
+    return 9999;
+  }
+  let distNonDiagonal =
+    Math.abs(a.cellX - b.cellX) + Math.abs(a.cellY - b.cellY);
+  //0.8 I USE INSTEAD OF SQRT OR SINE OR ANYTHING, I WANT THIS FUNCTION TO BE KEPT SIMPLE
+  return distNonDiagonal * (cellWidth * 0.8);
+};
+
 const distance = (a, b) => {
   let difx = b.x - a.x;
   let dify = b.y - a.y;
   let ret = Math.sqrt(difx * difx + dify * dify);
-  //if (isNaN(ret)) debugger;
   return ret;
 };
 
