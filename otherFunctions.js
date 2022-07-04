@@ -21,24 +21,24 @@ function uniq(a) {
   });
 }
 
-const getMaxVal = (val, isItAGene) => {
+const getMaxVal = (val, subObj) => {
   let max = 0;
   for (let i = 0; i < animals.length; i++) {
     let a = animals[i];
-    if (!isItAGene) {
+    if (!subObj) {
       if (a[val] > max) max = a[val];
-    } else if (a.genes[val] > max) max = a.genes[val];
+    } else if (a[subObj][val] > max) max = a[subObj][val];
   }
   return max;
 };
 
-const getAvgVal = (val, isItAGene) => {
+const getAvgVal = (val, subObj) => {
   let sum = 0;
   let filteredAnimals = animals.filter((k) => !k.dead);
   for (let i = 0; i < filteredAnimals.length; i++) {
     let a = filteredAnimals[i];
-    if (!isItAGene) sum += a[val];
-    else sum += a.genes[val];
+    if (!subObj) sum += a[val];
+    else sum += a[subObj][val];
   }
   return Number((sum / filteredAnimals.length).toFixed(4));
 };
@@ -69,6 +69,8 @@ const getTotalNumberOfAnimalsInCells = () => {
   }
   return t;
 };
+
+const getRandomColor = () => Math.floor(Math.random() * 16777215).toString(16);
 
 const generateID = () => {
   let vowels = "aeiou";
@@ -154,18 +156,25 @@ const sortAnimalsByDistanceTo = (animalsArr, obj) => {
   return sortedAnimals;
 };
 
-const addAnimalAtPosition = (age) => {
+const addAnimalAtPosition = (age, genes) => {
   animals.push(
     new Animal(
       cellWidth,
       grid,
-      null,
+      genes ? genes : null,
       window.mouseX,
       window.mouseY,
       age //starting age
     )
   );
 };
+
+const getPredatorGenes = () => {
+  return JSON.parse(
+    '{"sightLimit":4.964255007009292,"fear":0.7035665277371901,"agility":1.6961887138240577,"maxAcceleration":1.0292728463064431,"likability":0.9702793718031613,"likabilityTreshold":0.3615422169081898,"lifeExpectancy":489.45864578230965,"healthRecoveryWhenEating":0.3544978373180971,"pregnancyDuration":5.808918737404682,"maxChildrenWhenPregnant":5.008062038710774,"chancesToGetPregnant":0.708951569744307,"minAgeToGetPregnant":12.65913635586488,"clockEvery":9.731181896590392,"maxHealth":101.51880149150294,"partOfPregnancyThatEscapes":0.13457914207387514,"r":0.9271444200574264,"g":0.1793406145526005,"b":0.08944965697432442}'
+  );
+};
+
 const addShortCuts = () => {
   window.onkeydown = (e) => {
     let key = e.key.toLowerCase();
@@ -177,6 +186,8 @@ const addShortCuts = () => {
     else if (key == "t") targetsCheckbox.checked = !targetsCheckbox.checked;
     else if (key == "a") addAnimalAtPosition(0);
     else if (key == "d") addAnimalAtPosition(9999);
+    else if (key == "w")
+      addAnimalAtPosition(MAX_LIFE_EXPECTANCY * 0.3, getPredatorGenes());
   };
 };
 
@@ -196,12 +207,12 @@ const showDataInControlPanel = () => {
     content += "<p>total food: " + getAllAvailableFood() + "<p>";
     content +=
       "<p>age/life expect" +
-      (getAvgVal("age") / getAvgVal("lifeExpectancy", true)).toFixed(2) +
+      (getAvgVal("age") / getAvgVal("lifeExpectancy", "genes")).toFixed(2) +
       "</p>";
 
     content +=
       "<p>hunger/hungerlimit : " +
-      (getAvgVal("hunger") / getAvgVal("hungerLimit", true)).toFixed(2) +
+      (getAvgVal("hunger") / getAvgVal("hungerLimit", "genes")).toFixed(2) +
       "</p>";
     cont.innerHTML = content;
     renderStatsData();
@@ -218,7 +229,7 @@ const getStatsData = () => {
   if ("genes" in an) {
     let genes = Object.keys(an.genes);
     for (let gen of genes) {
-      ret[gen] = getAvgVal(gen, true);
+      ret[gen] = getAvgVal(gen, "genes");
     }
   }
 

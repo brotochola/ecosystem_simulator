@@ -237,7 +237,7 @@ class Cell {
         this.food += howMuchMoreFood;
         //THIS MAKES NEW GRASS IF IT WAS DESERT, FROMT HE TYPE OF FOOD THE ANIMAL ATE
         if (this.food > this.maxFood * 0.1 && this.type == 1)
-          this.type = animal.myTypeOfFood;
+          this.type = animal.props.myTypeOfFood;
       }
     }
   }

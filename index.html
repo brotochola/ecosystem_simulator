@@ -42,11 +42,16 @@
         } */
 
         #pause,
-        #hidePanel {
+        #hidePanel,
+        #step {
             position: fixed;
             bottom: 0px;
             right: 0px;
             z-index: 9999;
+        }
+
+        #step {
+            right: 200px;
         }
 
         #hidePanel {
@@ -127,6 +132,7 @@
     </control>
     <button id="hidePanel" onclick="togglePanel()">togglePanel</button>
     <button id="pause" onclick="pausebutton()">pause</button>
+    <button id="step" onclick="stepButton()">step</button>
 
 
     <script src="cell.js"></script>
