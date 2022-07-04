@@ -72,7 +72,7 @@ class Animal {
       //  hungerIncrease: 0.012,
       pregnancyDuration: 6 * YEAR,
       maxChildrenWhenPregnant: Math.floor(Math.random() * 6) + 1,
-      chancesToGetPregnant: Math.random(),
+      chancesToGetPregnant: 99, // Math.random(),
       minAgeToGetPregnant: 13 * YEAR,
       clockEvery: 10,
 
@@ -127,7 +127,7 @@ class Animal {
 
     if (tempHungerLimit < 1) tempHungerLimit = 1;
     if (tempHungerLimit > 10) tempHungerLimit = 10;
-    this.props.hungerLimit = Math.round(tempHungerLimit);
+    this.props.hungerLimit = 10; // Math.round(tempHungerLimit);
   };
 
   setHungerIncrease = () => {
@@ -138,7 +138,7 @@ class Animal {
     // let temp = Math.abs(b - g);
     if (temp > 1) temp = 1;
     if (temp < 0.01) temp = 0.01;
-    this.props.hungerIncrease = temp; //0.015;
+    this.props.hungerIncrease = 0.01; // temp; //0.015;
   };
 
   setMaxSize() {
@@ -155,7 +155,7 @@ class Animal {
     let r = this.genes.r;
     let g = this.genes.g;
     let b = this.genes.b;
-    this.props.carnivore = r > (g + b) * 1.5;
+    this.props.carnivore = r * g > b + g / 2;
   };
 
   initializeValuesAccordingToGenes = () => {
@@ -929,9 +929,9 @@ class Animal {
     if (distToPray < this.cellWidth / 2) {
       if (this.target instanceof Animal && this.target.health > 0) {
         //THE HEALTH OF THE VICTIM GOES DOWN RELATIVELY TO THE SIZE OF THE PREDATOR
-        this.target.health -= this.size * 3;
+        this.target.health -= this.size;
         //THE HUNGER OF THE PREDATOR HAS TO DO WITH THE SIZE OF THE PRAY
-        this.hunger -= this.target.size * 0.5;
+        this.hunger -= this.target.size;
 
         return true;
       }
