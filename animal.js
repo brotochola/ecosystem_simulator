@@ -703,17 +703,11 @@ class Animal {
 
     for (let anim of this.closePredators) {
       let diff = p5.Vector.sub(this.pos, anim.pos);
-      let dist = calcDistanceFaster(this, anim);
-      if (dist > 0) {
-        diff.div(dist);
-        avg.add(diff);
-      }
+      avg.add(diff);
     }
 
-    avg.div(divideByHowMany);
-    //  avg.sub(this.vel);
+    //avg.div(divideByHowMany);
     avg.setMag(this.getMaxSpeed());
-
     this.vel = avg;
   }
 
