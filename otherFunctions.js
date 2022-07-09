@@ -171,7 +171,18 @@ const addAnimalAtPosition = (age, genes) => {
 
 const getPredatorGenes = () => {
   return JSON.parse(
-    '{"sightLimit":4.964255007009292,"fear":0.7035665277371901,"agility":1.6961887138240577,"maxAcceleration":1.0292728463064431,"likability":0.9702793718031613,"likabilityTreshold":0.3615422169081898,"lifeExpectancy":489.45864578230965,"healthRecoveryWhenEating":0.3544978373180971,"pregnancyDuration":5.808918737404682,"maxChildrenWhenPregnant":5.008062038710774,"chancesToGetPregnant":0.708951569744307,"minAgeToGetPregnant":12.65913635586488,"clockEvery":9.731181896590392,"maxHealth":101.51880149150294,"partOfPregnancyThatEscapes":0.13457914207387514,"r":0.9271444200574264,"g":0.1793406145526005,"b":0.08944965697432442}'
+    '{"sightLimit":6,"fear":0.7035665277371901,"agility":1,"maxAcceleration":1.0292728463064431,"likability":1,"likabilityTreshold":0.3615422169081898,"lifeExpectancy":489.45864578230965,"healthRecoveryWhenEating":0.3544978373180971,"pregnancyDuration":5.808918737404682,"maxChildrenWhenPregnant":5.008062038710774,"chancesToGetPregnant":1,"minAgeToGetPregnant":12.65913635586488,"clockEvery":9.731181896590392,"maxHealth":101.51880149150294,"partOfPregnancyThatEscapes":0.13457914207387514,"r":1,"g":1,"b":0}'
+  );
+};
+const getVeggieGenes = () => {
+  return JSON.parse(
+    '{"sightLimit":5,"fear":0.7035665277371901,"agility":2,"maxAcceleration":1.0292728463064431,"likability":1,"likabilityTreshold":0,"lifeExpectancy":489.45864578230965,"healthRecoveryWhenEating":0.3544978373180971,"pregnancyDuration":10,"maxChildrenWhenPregnant":5,"chancesToGetPregnant":1,"minAgeToGetPregnant":1.65913635586488,"clockEvery":2,"maxHealth":101.51880149150294,"partOfPregnancyThatEscapes":0.13457914207387514,"r":' +
+      Math.random() * 0.5 +
+      ',"g":' +
+      Math.random() * 0.5 +
+      ',"b":' +
+      0.2 +
+      "}"
   );
 };
 
@@ -184,10 +195,10 @@ const addShortCuts = () => {
     else if (key == "s") renderStrokes.checked = !renderStrokes.checked;
     else if (key == "r") renderCheckBox.checked = !renderCheckBox.checked;
     else if (key == "t") targetsCheckbox.checked = !targetsCheckbox.checked;
-    else if (key == "a") addAnimalAtPosition(0);
+    else if (key == "a") addAnimalAtPosition(0.4, getVeggieGenes());
     else if (key == "d") addAnimalAtPosition(9999);
     else if (key == "w")
-      addAnimalAtPosition(MAX_LIFE_EXPECTANCY * 0.3, getPredatorGenes());
+      addAnimalAtPosition(MAX_LIFE_EXPECTANCY * 0.4, getPredatorGenes());
   };
 };
 

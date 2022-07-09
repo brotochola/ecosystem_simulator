@@ -243,6 +243,11 @@ class Cell {
   }
 
   getColor() {
+    // if (
+    //   ((animals[0] || {}).closeCells || []).filter((k) => k == this).length > 0
+    // ) {
+    //   return "blue";
+    // }
     if (this.type == 1) return "rgba(0,0,0,0)";
     this.coefOpacity = this.food / MAX_FOOD_OF_CELLS;
     if (this.type == 0) {

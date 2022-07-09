@@ -28,9 +28,9 @@ var height = width;
 var USE_ANIMAL_LIMIT = true;
 var MAX_ANIMALS_PER_CELL = 5;
 
-var numberOfAnimals = 500;
+var numberOfAnimals = 100;
 var animalsLimit = 1000;
-var MAX_LIFE_EXPECTANCY = 100; //100
+var MAX_LIFE_EXPECTANCY = 2000; //100
 
 var PERCENTAGE_OF_ROCK_FLOOR = 0;
 var MAX_FOOD_OF_CELLS = 70;
@@ -59,7 +59,7 @@ var YEAR = 1;
 var MIN_DISTANCE_FACTOR_TO_INTERACT = 2;
 var MAX_MUTATION_FACTOR = 0.05;
 var RESOLUTION = 1;
-var SAVE_LOG_OF_ANIMALS = false;
+var SAVE_LOG_OF_ANIMALS = true;
 var SAVE_GENERAL_STATS = true;
 var SHOW_QUADTREE = false;
 var SHOW_SIGHT_SQUARE = false;
