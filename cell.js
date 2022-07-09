@@ -43,6 +43,10 @@ class Cell {
 
     /////definition of stuff:
   }
+
+  onClickHandler(event) {
+    this.type = -1;
+  }
   removeMe(who) {
     if (USE_QUADTREE) return;
     let where;
@@ -200,9 +204,13 @@ class Cell {
     });
     this.animalsHere = tempResult.map((k) => k.animal);
   }
-
+  amIanUnwalkableCell() {
+    return this.type == -1;
+  }
   tick(FRAMENUM) {
     this.FRAMENUM = FRAMENUM;
+
+    if (this.amIanUnwalkableCell()) return;
 
     //if (this.type == 1) return;
     //EVERY 10 FRAMES THEY GET 1 MORE FOOD, WHEN THEY GET TO THE LIMIT THEY GROW OUTWARDS
@@ -248,6 +256,8 @@ class Cell {
     // ) {
     //   return "blue";
     // }
+    if (this.type == -1) return "darkblue";
+
     if (this.type == 1) return "rgba(0,0,0,0)";
     this.coefOpacity = this.food / MAX_FOOD_OF_CELLS;
     if (this.type == 0) {

@@ -171,7 +171,7 @@ const addAnimalAtPosition = (age, genes) => {
 
 const getPredatorGenes = () => {
   return JSON.parse(
-    '{"sightLimit":6,"fear":0.7035665277371901,"agility":1,"maxAcceleration":1.0292728463064431,"likability":1,"likabilityTreshold":0.3615422169081898,"lifeExpectancy":489.45864578230965,"healthRecoveryWhenEating":0.3544978373180971,"pregnancyDuration":5.808918737404682,"maxChildrenWhenPregnant":5.008062038710774,"chancesToGetPregnant":1,"minAgeToGetPregnant":12.65913635586488,"clockEvery":9.731181896590392,"maxHealth":101.51880149150294,"partOfPregnancyThatEscapes":0.13457914207387514,"r":1,"g":1,"b":0}'
+    '{"sightLimit":5,"fear":0.7035665277371901,"agility":1,"maxAcceleration":1.0292728463064431,"likability":1,"likabilityTreshold":0.3615422169081898,"lifeExpectancy":489.45864578230965,"healthRecoveryWhenEating":0.3544978373180971,"pregnancyDuration":5.808918737404682,"maxChildrenWhenPregnant":5.008062038710774,"chancesToGetPregnant":1,"minAgeToGetPregnant":12.65913635586488,"clockEvery":9.731181896590392,"maxHealth":101.51880149150294,"partOfPregnancyThatEscapes":0.13457914207387514,"r":1,"g":1,"b":0}'
   );
 };
 const getVeggieGenes = () => {
@@ -339,7 +339,7 @@ const calcDistanceFaster = (a, b) => {
   let distNonDiagonal =
     Math.abs(a.cellX - b.cellX) + Math.abs(a.cellY - b.cellY);
   //0.8 I USE INSTEAD OF SQRT OR SINE OR ANYTHING, I WANT THIS FUNCTION TO BE KEPT SIMPLE
-  return distNonDiagonal * (cellWidth * 0.8);
+  return distNonDiagonal * (cellWidth * 0.7);
 };
 
 const distance = (a, b) => {

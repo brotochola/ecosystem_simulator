@@ -58,10 +58,10 @@ class Animal {
     this.cellsClose = [];
     //GENES
     this.genes = genes || {
-      sightLimit: 5,
+      sightLimit: 10,
       fear: Math.random(),
       // diet: Math.random(), //0 is carnivore, 1herbi, 0.5 omni
-      agility: this.cellWidth * 0.2 * Math.random() + 1,
+      agility: this.cellWidth * 0.1 * Math.random(),
       maxAcceleration: 1,
       // compatibilityTreshhold: 0.5, //if 1 they can breed with anyone
       likability: Math.random(),
@@ -70,10 +70,10 @@ class Animal {
       healthRecoveryWhenEating: Math.random() * 0.5,
       //hungerLimit: 10,
       //  hungerIncrease: 0.012,
-      pregnancyDuration: 6 * YEAR,
+      pregnancyDuration: (MAX_LIFE_EXPECTANCY - Math.random() * 5) / 20,
       //maxChildrenWhenPregnant: Math.floor(Math.random() * 6) + 1,
       chancesToGetPregnant: 99, // Math.random(),
-      minAgeToGetPregnant: 13 * YEAR,
+      minAgeToGetPregnant: MAX_LIFE_EXPECTANCY * 0.14,
       clockEvery: 10,
 
       //maxSize: RESOLUTION * (Math.random() * 20 + 5),
@@ -84,15 +84,11 @@ class Animal {
       b: Math.random(),
     };
 
-    this.initializeValuesAccordingToGenes();
-
-    this.defineSize();
     //STARTING VALUES
     this.pregnant = false;
     this.prevPregnancyValue = false;
     this.whenDidIGetPregnant = null;
 
-    this.hunger = this.getStartingHunger(parentsHunger);
     if (this.hunger < 0) this.hunger = 0;
 
     this.startingHunger = Number(this.hunger);
@@ -112,11 +108,13 @@ class Animal {
     this.vel.limit(this.getMaxSpeed());
 
     this.perfoCheck = 999;
+    this.initializeValuesAccordingToGenes();
+    this.hunger = this.getStartingHunger(parentsHunger);
 
     //console.log("## new animal is born", this.id, this.lastName);
   }
   getMaxSpeed = () => {
-    return this.genes.agility * this.size * COEF_OF_SIZE_THAT_DEFINES_SPEED;
+    return this.genes.agility + this.size * COEF_OF_SIZE_THAT_DEFINES_SPEED;
   };
 
   setHungerLimit = () => {
@@ -127,7 +125,7 @@ class Animal {
 
     if (tempHungerLimit < 1) tempHungerLimit = 1;
     if (tempHungerLimit > 10) tempHungerLimit = 10;
-    this.props.hungerLimit = 10; // Math.round(tempHungerLimit);
+    this.props.hungerLimit = this.size; // Math.round(tempHungerLimit);
   };
 
   setHungerIncrease = () => {
@@ -138,7 +136,7 @@ class Animal {
     // let temp = Math.abs(b - g);
     if (temp > 1) temp = 1;
     if (temp < 0.01) temp = 0.01;
-    this.props.hungerIncrease = 0.01; // temp; //0.015;
+    this.props.hungerIncrease = 0.02;
   };
 
   setMaxSize() {
@@ -150,30 +148,34 @@ class Animal {
     let temp = 5 + 7 * (g + b + r);
 
     this.props.maxSize = temp;
+    return temp;
   }
-  amICarnivore = () => {
+  setifIAmCarnivore = () => {
     let r = this.genes.r;
     let g = this.genes.g;
     let b = this.genes.b;
-    this.props.carnivore = r * g > b + g / 2;
+    this.props.carnivore = r * g > b + g / 4;
   };
 
   getNumberOfChildrenWhenPregnant = () => {
     let r = this.genes.r;
     let g = this.genes.g;
     let b = this.genes.b;
-    if (this.props.carnivore) return 2.2;
-    else return g * 5 + r * 5 + b * 5;
+    let temp = g * 3 + r * 3 + b * 3;
+
+    if (this.props.carnivore) return temp * COEF_OF_BIRTH_OF_CARNIVORES;
+    else return temp;
   };
 
   initializeValuesAccordingToGenes = () => {
     this.props = {};
+    this.props.maxSize = this.setMaxSize();
+    this.size = this.defineSize();
     this.getMyTypeOfFood();
     this.setIfImAScavenger();
     this.setHungerLimit();
     this.setHungerIncrease();
-    this.setMaxSize();
-    this.amICarnivore();
+    this.setifIAmCarnivore();
 
     if (this.genes.clockEvery < 1) this.genes.clockEvery = 1;
     if (this.genes.sightLimit < 1) this.genes.sightLimit = 1;
@@ -203,7 +205,8 @@ class Animal {
   }
 
   checkIfTheTargetIsTooFar() {
-    if (!this.target || !this.target.getPos || !this.getPos) return;
+    if (!this.target || !this.target.pos || !this.pos) return;
+
     if (
       calcDistanceFaster(this.target, this) >
       this.cellWidth * this.genes.sightLimit
@@ -212,44 +215,43 @@ class Animal {
     }
   }
 
+  calculateIfItsShorterGoingAround() {
+    // /// LET'S CHECK IF I SHOULD GO AROUND,
+    //THROUGH THE LIMITS OF THE MAP IN ORDER TO APPEAR ONT HE OTHER SIDE
+    let shouldIGoThroughTheOtherSideInX = false;
+    let shouldIGoThroughTheOtherSideInY = false;
+    let distX = Math.abs(this.target.pos.x - this.pos.x);
+    let distY = Math.abs(this.target.pos.y - this.pos.y);
+    if (distX > width / 2) shouldIGoThroughTheOtherSideInX = true;
+    if (distY > height / 2) shouldIGoThroughTheOtherSideInY = true;
+
+    return {
+      invertX: shouldIGoThroughTheOtherSideInX,
+      invertY: shouldIGoThroughTheOtherSideInY,
+    };
+  }
+
   calculateVelVectorAccordingToTarget() {
     //I REFRESH THIS EVERY 3 FRAMES
 
     if (!("x" in this.vel) || !("x" in this.pos)) return;
 
-    // /// LET'S CHECK IF I SHOULD GO AROUND, THROUGH THE LIMITS OF THE MAP IN ORDER TO APPEAR ONT HE OTHER SIDE
-    // let shouldIGoThroughTheOtherSideInX = false;
-    // let shouldIGoThroughTheOtherSideInY = false;
-
-    // if (
-    //   this.target.pos.x - this.pos.x >
-    //   this.pos.x + width - this.target.pos.x
-    // ) {
-    //   //GO THROUGH THE OTHER SIDE
-    //   shouldIGoThroughTheOtherSideInX = true;
-    // }
-
-    // if (
-    //   this.target.pos.y - this.pos.y >
-    //   this.pos.y + height - this.target.pos.y
-    // ) {
-    //   //GO THROUGH THE OTHER SIDE VERTICALLY
-    //   shouldIGoThroughTheOtherSideInY = true;
-    // }
-
-    // if (shouldIGoThroughTheOtherSideInY) {
-    //   console.log(this.pos, this.target.pos);
-    // }
-
     if (this.target) {
-      if ("getPos" in this.target && this.target.getPos instanceof Function) {
-        let targetsPos = this.target.getPos(); //getpos returns a copy of the vector
+      if (this.target.pos) {
+        let vectorThatAimsToTheTarger = p5.Vector.sub(
+          this.target.pos,
+          this.pos
+        );
+        let invertedVector = p5.Vector.sub(this.pos, this.target.pos);
 
         if (this.state != 8) {
-          this.vel = p5.Vector.sub(targetsPos, this.pos);
+          this.vel = vectorThatAimsToTheTarger;
+          const { invertX, invertY } = this.calculateIfItsShorterGoingAround();
+          if (invertX) this.vel.x *= -1;
+          if (invertY) this.vel.y *= -1;
         } else {
           //STATE 8 MEANS ESCAPING FROM TARGET
-          this.vel = p5.Vector.sub(this.pos, targetsPos);
+          this.vel = invertedVector;
         }
       }
     } else {
@@ -262,7 +264,6 @@ class Animal {
     }
 
     //  this.vel.limit(this.genes.maxSpeed);
-    // debugger;
 
     //  console.log(this.vel);
   }
@@ -403,7 +404,7 @@ class Animal {
       //VEGGIE
       //CHECK HOW MANY ANIMALS ARE THERE RIGHT NOW
       let filteredCells = this.closeCells.filter(
-        (k) => k.howManyAnimalsInSameCell < MAX_ANIMALS_PER_CELL
+        (k) => k.animalsHere.length < MAX_ANIMALS_PER_CELL
       );
 
       for (let cell of filteredCells) {
@@ -437,7 +438,8 @@ class Animal {
         // !k.props.carnivore &&
         k.id != this.id &&
         k.health > 0 &&
-        k.howManyAnimalsInSameCell < MAX_ANIMALS_PER_CELL
+        k.howManyAnimalsInSameCell < MAX_ANIMALS_PER_CELL &&
+        k.size < this.size
     );
     if (closePrays.length > 0) {
       this.setTarget(closePrays[0]);
@@ -759,6 +761,7 @@ class Animal {
   }
 
   setVectorToEscapeFromPredators() {
+    //AKA SEPARATION
     let avg = new p5.Vector();
 
     let divideByHowMany = this.closePredators.length;
@@ -781,6 +784,7 @@ class Animal {
   }
 
   tick(FRAMENUM) {
+    // this.debug = 0;
     if (this.checkDeath()) return;
 
     let tempPerfoTime = performance.now();
@@ -824,7 +828,7 @@ class Animal {
     }
 
     //// POSITION STUFF
-    this.checkIfTheTargetIsTooFar();
+    //  this.checkIfTheTargetIsTooFar();
     this.vel.add(this.acc);
     this.makeThemShake();
     this.vel.limit(this.getMaxSpeed());
@@ -841,7 +845,6 @@ class Animal {
     this.cellX = Math.floor(this.pos.x / this.cellWidth);
     this.cellY = Math.floor(this.pos.y / this.cellWidth);
     this.defineSize();
-
     this.perfoCheck = performance.now() - tempPerfoTime;
 
     //this.showDebug()
@@ -908,7 +911,7 @@ class Animal {
 
     if (this.target) {
       try {
-        me.distance2Target = distance(this.pos, this.target.pos).toFixed(2);
+        me.distance2Target = calcDistanceFaster(this, this.target).toFixed(2);
       } catch (e) {
         //console.warn(e);
       }
@@ -925,10 +928,12 @@ class Animal {
     //   this.size = 30;
     //   return;
     // }
+
     this.size = (this.age / this.genes.lifeExpectancy) * this.props.maxSize;
 
     if (this.size > this.props.maxSize) this.size = this.props.maxSize;
     if (this.size < MIN_ANIMAL_SIZE) this.size = MIN_ANIMAL_SIZE;
+    return this.size;
   }
 
   getMyI() {
@@ -952,24 +957,36 @@ class Animal {
     ctx.closePath();
   }
 
+  drawDebugAura() {
+    ctx.moveTo(this.pos.x, this.pos.y);
+    ctx.beginPath();
+    ctx.arc(this.pos.x, this.pos.y, this.size * 2, 0, Math.PI * 2);
+    ctx.fillStyle = "#ff000077";
+    ctx.fill();
+    ctx.closePath();
+  }
+  areWeInTheSameCell(animal) {
+    return animal.ImAtCell == this.ImAtCell;
+  }
+
   checkIfFuckBuddyIsClose() {
     if (!(this.target instanceof Animal)) return;
     if (this.target && this.target.pos) {
-      let dist = calcDistanceFaster(this, this.target);
-      if (dist) {
-        if (
-          dist < this.cellWidth * MIN_DISTANCE_FACTOR_TO_INTERACT &&
-          this.amIOldEnoughToFuck()
-        ) {
-          if (Math.random() < this.genes.chancesToGetPregnant) {
-            this.getPregnant();
-            return true;
-          } else {
-            this.setTarget(null);
-          }
+      // let dist = calcDistanceFaster(this, this.target);
 
-          // this.separation();
+      if (
+        //  dist < this.cellWidth * MIN_DISTANCE_FACTOR_TO_INTERACT &&
+        this.areWeInTheSameCell(this.target) &&
+        this.amIOldEnoughToFuck()
+      ) {
+        if (Math.random() < this.genes.chancesToGetPregnant) {
+          this.getPregnant();
+          return true;
+        } else {
+          this.setTarget(null);
         }
+
+        // this.separation();
       }
     }
     return false;
@@ -1191,6 +1208,8 @@ class Animal {
     if (ageRatio > 1) ageRatio = 1;
     if (ageRatio < 0) ageRatio = 0;
 
+    //if (this.debug) this.drawDebugAura();
+
     ctx.beginPath();
     ctx.lineWidth = this.highlighted ? 15 : 3;
     this.strokeColor = this.getStrokeColor();
@@ -1213,7 +1232,7 @@ class Animal {
 
     //DIRECTION LINE
 
-    if (!this.dead) {
+    if (!this.dead && RENDER_DIRECTION_LINES) {
       this.drawDirectionLine();
 
       //TARGET LINE
@@ -1235,26 +1254,24 @@ class Animal {
   getStrokeColor() {
     if (this.highlighted) return "#00ff00";
 
-    let c =
-      this.state == 6
-        ? "yellow" // eating
-        : this.state == 1 && this.props.carnivore
-        ? "#ff07ff" //carnivore chasing pray
-        : this.state == 2
-        ? "white"
-        : this.state == 8
-        ? "white" //escaping from fuck buddy
-        : this.state == 0
-        ? "#2222ff" //idle blue
-        : this.state == 1
-        ? this.props.myTypeOfFood == 0
-          ? "#00ff00" //hungry green
-          : "#faff64" //yellow
-        : this.state == 4
-        ? "#ff0000" //horny red
-        : this.dead
-        ? "#000000" //dead black
-        : null;
+    let c;
+
+    if (this.state == 6) c = "yellow"; // eating
+    else if (this.state == 2) c = "white";
+    else if (this.state == 8) c = "white"; //escaping from fuck buddy
+    else if (this.state == 0) c = "#2222ff"; //idle blue
+    else if (this.state == 1) {
+      if (!this.props.carnivore) {
+        if (this.props.myTypeOfFood == 0) {
+          c = "#00ff00"; //hungry green
+        } else if (this.props.myTypeOfFood == 2) {
+          c = "#faff64";
+        }
+      } else {
+        c = "#ff07ff"; //carnbivore chasing pray
+      }
+    } else if (this.state == 4) c = "#ff0000"; //horny red
+    else if (this.dead) c = "#000000"; //dead black
 
     //IF YOU EAT DEAD MEAT...
     if (

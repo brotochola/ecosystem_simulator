@@ -26,17 +26,18 @@ var width = Math.min(window.innerWidth * 0.95, window.innerHeight * 0.95);
 var height = width;
 
 var USE_ANIMAL_LIMIT = true;
-var MAX_ANIMALS_PER_CELL = 5;
 
-var numberOfAnimals = 100;
+//////////////////////
+var numberOfAnimals = 20;
 var animalsLimit = 1000;
-var MAX_LIFE_EXPECTANCY = 2000; //100
+var MAX_LIFE_EXPECTANCY = 300; //100
 
 var PERCENTAGE_OF_ROCK_FLOOR = 0;
-var MAX_FOOD_OF_CELLS = 70;
+var MAX_FOOD_OF_CELLS = 10000;
+var CELLCLOCK_TO_REPRODUCE_GRASS = 35; //8
+var MIN_ANIMAL_SIZE = 5;
 var MAX_POSSIBLE_SIZE_FOR_ANIMALS = 35;
-var CELLCLOCK_TO_REPRODUCE_GRASS = 8; //8
-var COEF_FERTILIZATION_OF_DEAD_ANIMALS = 0.005;
+var COEF_FERTILIZATION_OF_DEAD_ANIMALS = 0.004;
 var COEF_HEALTH_DECREASE_BY_HUNGER = 0.01;
 var COEF_HEALTH_DECREASE_BY_AGE = 2;
 var COEF_PERCENTAGE_OF_HUNGER_TO_BE_CONSIDERED_FULL = 0.2;
@@ -45,25 +46,30 @@ var RENDER_TARGET_LINES = false;
 var RENDER_PREGNANCY_BOOM = true;
 var COEF_OF_MAX_FOOD_TO_REPRODUCE = 0.9;
 var SEASON_YEAR_DURATION = 365;
-var MIN_ANIMAL_SIZE = 5;
-var COEF_OF_SIZE_THAT_DEFINES_SPEED = 0.1;
+
+var COEF_OF_SIZE_THAT_DEFINES_SPEED = 0.2;
 var COEF_OF_SIZE_THAT_DEFINES_HUNGER_INCREASE = 0.1;
 var FACTOR_HOW_MUCH_FOOD_ANIMALS_EAT_RELATIVE_TO_SIZE = 1;
-
+var MAX_ANIMALS_PER_CELL = 5;
 ////// ALGORITHM SELECTION:
 var USE_QUADTREE = false;
 
 ////
 
-var YEAR = 1;
-var MIN_DISTANCE_FACTOR_TO_INTERACT = 2;
+var MIN_DISTANCE_FACTOR_TO_INTERACT = 0.5;
 var MAX_MUTATION_FACTOR = 0.05;
+var COEF_OF_BIRTH_OF_CARNIVORES = 0.99;
 var RESOLUTION = 1;
 var SAVE_LOG_OF_ANIMALS = true;
 var SAVE_GENERAL_STATS = true;
 var SHOW_QUADTREE = false;
 var SHOW_SIGHT_SQUARE = false;
-//////
+////////////////////////// RENDER STUFF:
+var RENDER_GRID = true;
+var CLEAR_FRAME = true;
+var CLEAR_FRAME_OPACITY = false;
+var RENDER_DIRECTION_LINES = true;
+//////////////////////
 const pausebutton = () => {
   console.log("pause");
   pause = !pause;
@@ -74,11 +80,6 @@ const pausebutton = () => {
 const oneStepOfGameLoop = () => {
   tickOfQuadTree();
   FRAMENUM++;
-
-  //  ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-  ctx.rect(0, 0, width, height);
-  ctx.fillStyle = "#544a4a";
-  ctx.fill();
 
   for (let i = 0; i < height / cellWidth; i++) {
     for (let j = 0; j < width / cellWidth; j++) {
@@ -92,7 +93,7 @@ const oneStepOfGameLoop = () => {
 };
 
 const stepButton = () => {
-  console.log("step");
+  console.log("#", FRAMENUM);
   oneStepOfGameLoop();
   renderEverything();
   pause = true;
@@ -165,9 +166,22 @@ const gameLoop = () => {
 };
 
 const renderEverything = () => {
-  for (let i = 0; i < height / cellWidth; i++) {
-    for (let j = 0; j < width / cellWidth; j++) {
-      grid[i][j].render(FRAMENUM);
+  if (CLEAR_FRAME) {
+    //  ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    ctx.rect(0, 0, width, height);
+    ctx.fillStyle = "#544a4a";
+    ctx.fill();
+  }
+  if (CLEAR_FRAME_OPACITY) {
+    ctx.rect(0, 0, width, height);
+    ctx.fillStyle = "#00000004";
+    ctx.fill();
+  }
+  if (RENDER_GRID) {
+    for (let i = 0; i < height / cellWidth; i++) {
+      for (let j = 0; j < width / cellWidth; j++) {
+        grid[i][j].render(FRAMENUM);
+      }
     }
   }
 
@@ -206,6 +220,7 @@ const handleClickOnCanvas = (e) => {
   let cellY = Math.floor(e.y / cellWidth);
   let cell = grid[cellY][cellX];
   window.cell = cell;
+  cell.onClickHandler(e);
   console.log("#CELL", cell.food, "Animals", cell.animalsHere.length);
   let animalFound = getAnimalAtPosition(e.x, e.y, cell);
 
@@ -248,6 +263,8 @@ const init = () => {
   canvas.height = height * RESOLUTION;
 
   ctx = canvas.getContext("2d");
+  //HERE WE CAN TEST COOL SHIT
+  //ctx.globalCompositeOperation = "soft-light";
   renderCheckBox = document.querySelector("#render");
   targetsCheckbox = document.querySelector("#targetsCheckbox");
   renderStrokes = document.querySelector("#renderStrokes");
