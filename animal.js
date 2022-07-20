@@ -1,19 +1,38 @@
 class Animal {
   getColorFromGenes() {
-    if (this.highlighted) return "#0000ff";
-    if (this.pregnant) {
-      return "#ffffff";
+    let r, g, b;
+    let a = 1;
+    if (this.highlighted) {
+      r = 0;
+      g = 100;
+      b = 100;
+      // } else if (this.pregnant) {
+      //   r = 255;
+      //   g = 255;
+      //   b = 255;
+    } else if (this.dead) {
+      r = g = b = 0;
+      a = (100 - this.decomposition) / 100;
+    } else {
+      r = Math.floor(this.genes.r * 255);
+      g = Math.floor(this.genes.g * 255);
+      b = Math.floor(this.genes.b * 255);
+      a = 1;
     }
-    if (this.dead) return "rgb(0,0,0," + (100 - this.decomposition) / 100 + ")";
-    return (
-      "rgb(" +
-      Math.floor(this.genes.r * 255) +
-      "," +
-      Math.floor(this.genes.g * 255) +
-      "," +
-      Math.floor(this.genes.b * 255) +
-      ")"
-    );
+
+    if (r > 255) r = 255;
+    if (g > 255) g = 255;
+    if (b > 255) b = 255;
+
+    if (r < 0) r = 0;
+    if (g < 0) g = 0;
+    if (b < 0) b = 0;
+
+    return "rgba(" + r + "," + g + "," + b + "," + a + ")";
+  }
+
+  getColorFromGenesHEX() {
+    return "0x" + rgba2hex(this.getColorFromGenes());
   }
 
   constructor(
@@ -110,6 +129,10 @@ class Animal {
     this.perfoCheck = 999;
     this.initializeValuesAccordingToGenes();
     this.hunger = this.getStartingHunger(parentsHunger);
+
+    this.graphics = new PIXI.Sprite(res.pez.texture);
+    this.graphics.anchor.set(0.5);
+    pixiApp.stage.addChild(this.graphics);
 
     //console.log("## new animal is born", this.id, this.lastName);
   }
@@ -776,6 +799,7 @@ class Animal {
     avg.setMag(this.getMaxSpeed());
     this.vel = avg;
   }
+
   haveIChangedCellSinceTheLastTick() {
     if (!this.prevCell) return true;
     if (this.prevCell && this.ImAtCell) {
@@ -832,6 +856,7 @@ class Animal {
     this.vel.add(this.acc);
     this.makeThemShake();
     this.vel.limit(this.getMaxSpeed());
+    this.prevPos = this.pos.copy();
     this.pos.add(this.vel);
 
     this.howManyAnimalsInSameCell = (
@@ -847,6 +872,7 @@ class Animal {
     this.defineSize();
     this.perfoCheck = performance.now() - tempPerfoTime;
 
+    if (SAVE_LOG_OF_ANIMALS) this.saveLog();
     //this.showDebug()
   }
 
@@ -1188,67 +1214,56 @@ class Animal {
   }
 
   render() {
-    ctx.save();
-    ctx.moveTo(this.pos.x, this.pos.y);
-    ctx.fillStyle = this.getColorFromGenes();
-    // ctx.rotate(0.01);
+    let magicFactorForScale = 50;
+    this.graphics.x = this.pos.x;
+    this.graphics.y = this.pos.y;
+    this.width = this.size;
+    this.height = this.size;
+    this.rotation = Math.atan2(this.vel.y, this.vel.x) - Math.PI;
+    this.graphics.rotation = this.rotation;
+    this.graphics.scale.x = this.size / magicFactorForScale;
+    this.graphics.scale.y = this.size / magicFactorForScale;
+    this.graphics.tint = this.getColorFromGenesHEX();
 
-    //ctx.rotate(((this.vel.angleBetween / 57.2958) * Math.PI) / 180);
+    pixiApp.stage.addChild(this.graphics);
 
-    // ctx.fillRect(
-    //   this.pos.x - this.size / 2,
-    //   this.pos.y - this.size / 2,
-    //   this.size,
-    //   this.size
+    //   else this.graphics.clear();
+    // draw a rectangle
+    // this.graphics.drawCircle(this.pos.x, this.pos.y, this.size / 2);
+    // this.graphics.endFill();
+    // ////////////////
+    // ctx.save();
+    // ctx.moveTo(this.pos.x, this.pos.y);
+    // ctx.fillStyle = this.getColorFromGenes();
+    // //if (this.debug) this.drawDebugAura();
+    // ctx.beginPath();
+    // ctx.lineWidth = this.highlighted ? 15 : 3;
+    // this.strokeColor = this.getStrokeColor();
+    // ctx.arc(
+    //   Math.floor(this.pos.x),
+    //   Math.floor(this.pos.y),
+    //   Math.floor(this.size / 2),
+    //   0,
+    //   2 * Math.PI
     // );
-
-    let healthRatio = this.health / this.genes.maxHealth;
-    let hungerRatio = 1 - this.hunger / this.props.hungerLimit;
-    let ageRatio = 1 - this.age / this.genes.lifeExpectancy;
-    if (ageRatio > 1) ageRatio = 1;
-    if (ageRatio < 0) ageRatio = 0;
-
-    //if (this.debug) this.drawDebugAura();
-
-    ctx.beginPath();
-    ctx.lineWidth = this.highlighted ? 15 : 3;
-    this.strokeColor = this.getStrokeColor();
-
-    ctx.arc(
-      Math.floor(this.pos.x),
-      Math.floor(this.pos.y),
-      Math.floor(this.size / 2),
-      0,
-      2 * Math.PI
-    );
-
-    if (this.strokeColor && !this.dead) {
-      ctx.strokeStyle = this.strokeColor;
-      if (!!renderStrokes.checked) ctx.stroke();
-    }
-
-    ctx.fill();
-    ctx.closePath();
-
-    //DIRECTION LINE
-
-    if (!this.dead && RENDER_DIRECTION_LINES) {
-      this.drawDirectionLine();
-
-      //TARGET LINE
-      if (this.target) {
-        if (RENDER_TARGET_LINES) this.drawTargetLine();
-      }
-
-      if (this.pregnant && !this.prevPregnancyValue)
-        if (RENDER_PREGNANCY_BOOM) this.drawPregnancyHappening();
-    }
-
-    if (SHOW_SIGHT_SQUARE) this.drawSightSquareToDebug();
-
-    ctx.restore();
-
-    if (SAVE_LOG_OF_ANIMALS) this.saveLog();
+    // if (this.strokeColor && !this.dead) {
+    //   ctx.strokeStyle = this.strokeColor;
+    //   if (!!renderStrokes.checked) ctx.stroke();
+    // }
+    // ctx.fill();
+    // ctx.closePath();
+    // //DIRECTION LINE
+    // if (!this.dead && RENDER_DIRECTION_LINES) {
+    //   this.drawDirectionLine();
+    //   //TARGET LINE
+    //   if (this.target) {
+    //     if (RENDER_TARGET_LINES) this.drawTargetLine();
+    //   }
+    //   if (this.pregnant && !this.prevPregnancyValue)
+    //     if (RENDER_PREGNANCY_BOOM) this.drawPregnancyHappening();
+    // }
+    // if (SHOW_SIGHT_SQUARE) this.drawSightSquareToDebug();
+    // ctx.restore();
   }
 
   getStrokeColor() {

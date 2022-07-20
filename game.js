@@ -3,9 +3,10 @@ var renderStrokes;
 var renderCheckBox;
 var grid = [];
 var ctx;
+var renderer;
 var pause = false;
 var canvas;
-
+var pixiApp, loader, pez, res;
 var animals = [];
 let targetsCheckbox;
 let pregnancyCheckbox;
@@ -79,7 +80,6 @@ const pausebutton = () => {
 
 const oneStepOfGameLoop = () => {
   tickOfQuadTree();
-  FRAMENUM++;
 
   for (let i = 0; i < height / cellWidth; i++) {
     for (let j = 0; j < width / cellWidth; j++) {
@@ -136,6 +136,7 @@ const gameLoop = () => {
     //   alert("all animals died");
     //   return;
     // }
+    FRAMENUM++;
     oneStepOfGameLoop();
 
     if (renderCheckBox.checked) {
@@ -166,17 +167,18 @@ const gameLoop = () => {
 };
 
 const renderEverything = () => {
-  if (CLEAR_FRAME) {
-    //  ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-    ctx.rect(0, 0, width, height);
-    ctx.fillStyle = "#544a4a";
-    ctx.fill();
-  }
-  if (CLEAR_FRAME_OPACITY) {
-    ctx.rect(0, 0, width, height);
-    ctx.fillStyle = "#00000004";
-    ctx.fill();
-  }
+  // if (CLEAR_FRAME) {
+  //   //  ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+  //   ctx.rect(0, 0, width, height);
+  //   ctx.fillStyle = "#544a4a";
+  //   ctx.fill();
+  // }
+  // if (CLEAR_FRAME_OPACITY) {
+  //   ctx.rect(0, 0, width, height);
+  //   ctx.fillStyle = "#00000004";
+  //   ctx.fill();
+  // }
+
   if (RENDER_GRID) {
     for (let i = 0; i < height / cellWidth; i++) {
       for (let j = 0; j < width / cellWidth; j++) {
@@ -185,9 +187,11 @@ const renderEverything = () => {
     }
   }
 
-  if (SHOW_QUADTREE && USE_QUADTREE) drawQuadtree(tree);
+  // if (SHOW_QUADTREE && USE_QUADTREE) drawQuadtree(tree);
 
   for (animal of animals) animal.render(FRAMENUM);
+
+  pixiApp.render(pixiApp.stage);
 };
 const createGrid = () => {
   for (let i = 0; i < height / cellWidth; i++) {
@@ -245,35 +249,51 @@ const createQuadtree = () => {
   );
 };
 
+function createPixiStage(cb) {
+  renderer = PIXI.autoDetectRenderer(width, height, {
+    backgroundColor: "0x00ff00",
+    antialias: true,
+    transparent: false,
+    resolution: 1,
+    autoresize: false,
+  });
+  loader = PIXI.Loader.shared;
+  pixiApp = new PIXI.Application({ width: width, height: height });
+  loader.add("pez", "pez.png");
+  loader.load((loader, resources) => {
+    res = resources;
+    document.body.appendChild(pixiApp.view);
+    if (cb instanceof Function) cb();
+  });
+}
+
 const init = () => {
   localStorage.clear();
-  grid = createGrid();
-  createAnimals(grid, numberOfAnimals);
 
-  console.log("# grid", grid);
-  console.log("# animals", animals);
+  createPixiStage(() => {
+    canvas = pixiApp.view;
+    canvas.id = "renderCanvas";
+    canvas.onclick = (e) => handleClickOnCanvas(e);
+    canvas.onmousemove = (e) => handleMouseMoveOnCanvas(e);
 
-  canvas = document.createElement("canvas");
-  canvas.id = "renderCanvas";
-  canvas.onclick = (e) => handleClickOnCanvas(e);
-  canvas.onmousemove = (e) => handleMouseMoveOnCanvas(e);
+    //document.body.appendChild(canvas);
+    // canvas.width = width * RESOLUTION;
+    // canvas.height = height * RESOLUTION;
 
-  document.body.appendChild(canvas);
-  canvas.width = width * RESOLUTION;
-  canvas.height = height * RESOLUTION;
+    //  ctx = canvas.getContext("2d");
+    //HERE WE CAN TEST COOL SHIT
+    //ctx.globalCompositeOperation = "soft-light";
+    renderCheckBox = document.querySelector("#render");
+    targetsCheckbox = document.querySelector("#targetsCheckbox");
+    renderStrokes = document.querySelector("#renderStrokes");
+    statsCanvas = document.querySelector("#statsCanvas");
 
-  ctx = canvas.getContext("2d");
-  //HERE WE CAN TEST COOL SHIT
-  //ctx.globalCompositeOperation = "soft-light";
-  renderCheckBox = document.querySelector("#render");
-  targetsCheckbox = document.querySelector("#targetsCheckbox");
-  renderStrokes = document.querySelector("#renderStrokes");
+    grid = createGrid();
+    createAnimals(grid, numberOfAnimals);
 
-  statsCanvas = document.querySelector("#statsCanvas");
+    if (USE_QUADTREE) createQuadtree();
 
-  if (USE_QUADTREE) createQuadtree();
-
-  addShortCuts();
-
-  gameLoop();
+    gameLoop();
+    addShortCuts();
+  });
 };

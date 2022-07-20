@@ -261,29 +261,56 @@ class Cell {
     if (this.type == 1) return "rgba(0,0,0,0)";
     this.coefOpacity = this.food / MAX_FOOD_OF_CELLS;
     if (this.type == 0) {
-      return "rgb(0, " + (this.coefOpacity * 200 + 50).toFixed(0) + ", 0)";
+      return "rgba(0, " + (this.coefOpacity * 200 + 50).toFixed(0) + ", 0,1)";
     } else if (this.type == 2) {
-      return (
-        "rgb(" +
-        (this.coefOpacity * 200 + 50).toFixed(0) +
-        ", " +
-        (this.coefOpacity * 20).toFixed(0) +
-        ", " +
-        (this.coefOpacity * 150 - 50).toFixed(0) +
-        ")"
-      );
+      let r = (this.coefOpacity * 200 + 50).toFixed(0);
+      let g = (this.coefOpacity * 20).toFixed(0);
+      let b = (this.coefOpacity * 150 - 50).toFixed(0);
+
+      if (r > 255) r = 255;
+      if (g > 255) g = 255;
+      if (b > 255) b = 255;
+
+      if (r < 0) r = 0;
+      if (g < 0) g = 0;
+      if (b < 0) b = 0;
+
+      return "rgba(" + r + ", " + g + ", " + b + ",1)";
     }
   }
 
+  getColorHex() {
+    return "0x" + rgba2hex(this.getColor());
+  }
+
   render(FRAMENUM) {
-    ctx.beginPath();
+    if (!this.graphics) this.graphics = new PIXI.Graphics();
+    else this.graphics.clear();
 
-    ctx.rect(this.pos.x, this.pos.y, this.cellWidth + 1, this.cellWidth + 1);
-    ctx.fillStyle = this.getColor();
-    ctx.fill();
-    ctx.closePath();
+    this.graphics.beginFill(this.getColorHex());
+
+    // draw a rectangle
+    this.graphics.drawRect(
+      this.pos.x,
+      this.pos.y,
+      this.cellWidth + 1,
+      this.cellWidth + 1
+    );
+    this.graphics.endFill();
+
+    pixiApp.stage.addChild(this.graphics);
+
+    // this.rectangle.width = this.cellWidth + 1;
+    // this.rectangle.height = this.cellWidth + 1;
+    // this.rectangle.tint = this.getColor();
+
+    //   ctx.beginPath();
+    //  ctx.rect(this.pos.x, this.pos.y, this.cellWidth + 1, this.cellWidth + 1);
+    //   ctx.fillStyle = this.getColor();
+    // ctx.fill();
+    // ctx.closePath();
+    ////
     // if (this.type == 1) this.elem.style.backgroundColor = "gray";
-
     // if (this.type != 1) {
     //   this.coefOpacity = this.food / this.maxFood;
     //   this.elem.innerHTML =
@@ -291,19 +318,16 @@ class Cell {
     //   if (this.type == 0) {
     //     //grass
     //     let bgVal = "rgba(0,255,0," + this.coefOpacity.toFixed(5) + ")";
-
     //     this.elem.style.backgroundColor = bgVal;
     //   } else if (this.type == 2) {
     //     //berries
     //     if (this.type == 2) {
     //       //grass
     //       let bgVal = "rgba(255,0,0," + this.coefOpacity.toFixed(5) + ")";
-
     //       this.elem.style.backgroundColor = bgVal;
     //     }
     //   }
     // }
-
     // if (this.type == 0 && this.food == 0) {
     //   this.type = 1;
     //   this.elem.style.opacity = 1;
